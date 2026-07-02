@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bollywood Photobooth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Mukta:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #f5c518;
+      --gold-light: #ffe066;
+      --gold-dark: #c9960c;
+      --magenta: #e91e8c;
+      --magenta-dark: #b8156e;
+      --purple: #6a0dad;
+      --purple-deep: #2d004f;
+      --red: #d4213d;
+      --teal: #00b8a9;
+      --bg: #1a0526;
+      --bg-card: rgba(45, 0, 79, 0.6);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(233, 30, 140, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, rgba(106, 13, 173, 0.2) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(245, 197, 24, 0.1) 0%, transparent 40%);
+      color: #fff;
+      font-family: 'Mukta', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* --- DÉCORATIONS BOLLYWOOD --- */
+    .deco-top, .deco-bottom {
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: 4vh;
+      z-index: 5;
+      pointer-events: none;
+      background: linear-gradient(90deg,
+        var(--magenta), var(--gold), var(--magenta), var(--gold), var(--magenta));
+      background-size: 25% 100%;
+    }
+    .deco-top { top: 0; }
+    .deco-bottom { bottom: 0; }
+
+    .deco-top::after, .deco-bottom::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2vh;
+      background: repeating-linear-gradient(90deg,
+        transparent 0px, transparent 20px,
+        var(--gold) 20px, var(--gold) 22px);
+      opacity: 0.3;
+    }
+    .deco-top::after { bottom: -2vh; }
+    .deco-bottom::after { top: -2vh; }
+
+    /* Motifs latéraux style mandala */
+    .deco-side {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4vw;
+      height: 60vh;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0.15;
+    }
+    .deco-side.left { left: 0; }
+    .deco-side.right { right: 0; }
+    .deco-side svg { width: 100%; height: 100%; }
+
+    /* --- TITRE --- */
+    #title {
+      position: fixed;
+      top: 5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Baloo 2', cursive;
+      font-size: 2.8vw;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 40px rgba(245, 197, 24, 0.3);
+      z-index: 10;
+      letter-spacing: 0.05em;
+    }
+
+    /* --- ÉCRAN PRINCIPAL --- */
+    #screen-live {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 1.5vh;
+      padding-top: 3vh;
+    }
+
+    /* Container du live view */
+    #view-container {
+      position: relative;
+      max-width: 75vw;
+      max-height: 50vh;
+    }
+
+    #liveview {
+      display: block;
+      max-width: 75vw;
+      max-height: 50vh;
+      border-radius: 16px;
+      border: 3px solid var(--gold);
+      box-shadow:
+        0 0 30px rgba(245, 197, 24, 0.2),
+        0 0 60px rgba(233, 30, 140, 0.15),
+        inset 0 0 30px rgba(0,0,0,0.3);
+    }
+
+    #overlay-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      pointer-events: none;
+    }
+
+    /* --- CONTRÔLES --- */
+    #controls {
+      display: flex;
+      gap: 3vw;
+      align-items: flex-start;
+      background: var(--bg-card);
+      padding: 1.2vh 2vw;
+      border-radius: 16px;
+      border: 1px solid rgba(245, 197, 24, 0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5vh;
+    }
+
+    .control-label {
+      font-family: 'Baloo 2', cursive;
+      font-size: 0.9vw;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 0.5vw;
+    }
+
+    /* Boutons de filtre */
+    .filter-btn {
+      width: 4vw;
+      height: 4vw;
+      border-radius: 50%;
+      border: 2px solid rgba(245, 197, 24, 0.3);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+      background: #1a0526;
+    }
+    .filter-btn:hover {
+      transform: scale(1.1);
+      border-color: var(--gold);
+      box-shadow: 0 0 15px rgba(245, 197, 24, 0.3);
+    }
+    .filter-btn.active {
+      border-color: var(--magenta);
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(233, 30, 140, 0.5);
+    }
+
+    .filter-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .item-name {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(26, 5, 38, 0.85);
+      font-size: 0.5vw;
+      text-align: center;
+      padding: 2px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--gold-light);
+      font-family: 'Mukta', sans-serif;
+    }
+
+    /* Boutons de props */
+    .prop-btn {
+      width: 4vw;
+      height: 4vw;
+      border-radius: 12px;
+      border: 2px solid rgba(245, 197, 24, 0.3);
+      cursor: pointer;
+      transition: all 0.25s;
+      background: #1a0526;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .prop-btn:hover {
+      transform: scale(1.1);
+      border-color: var(--gold);
+      box-shadow: 0 0 15px rgba(245, 197, 24, 0.3);
+    }
+    .prop-btn.active {
+      border-color: var(--gold);
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(245, 197, 24, 0.5);
+    }
+
+    .prop-btn img {
+      width: 65%;
+      height: 65%;
+      object-fit: contain;
+    }
+
+    .prop-btn .no-prop {
+      font-size: 1.2vw;
+      opacity: 0.4;
+      color: var(--gold);
+    }
+
+    /* Bouton capture */
+    #btn-capture {
+      font-family: 'Baloo 2', cursive;
+      font-size: 2vw;
+      font-weight: 800;
+      padding: 0.8vw 4vw;
+      border: none;
+      border-radius: 100px;
+      background: linear-gradient(135deg, var(--magenta), var(--red));
+      color: #fff;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow:
+        0 4px 20px rgba(233, 30, 140, 0.4),
+        0 0 40px rgba(233, 30, 140, 0.2);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    #btn-capture:hover {
+      transform: scale(1.06);
+      box-shadow:
+        0 4px 30px rgba(233, 30, 140, 0.6),
+        0 0 60px rgba(233, 30, 140, 0.3);
+    }
+    #btn-capture:disabled {
+      background: #333;
+      box-shadow: none;
+      transform: none;
+      cursor: default;
+    }
+
+    /* --- SÉLECTEUR DE MODE --- */
+    #mode-selector {
+      display: flex;
+      gap: 0.8vw;
+    }
+
+    .mode-btn {
+      font-family: 'Baloo 2', cursive;
+      font-size: 1vw;
+      font-weight: 700;
+      padding: 0.5vw 1.5vw;
+      border: 2px solid rgba(245, 197, 24, 0.3);
+      border-radius: 50px;
+      background: transparent;
+      color: var(--gold);
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .mode-btn:hover {
+      border-color: var(--gold);
+      box-shadow: 0 0 15px rgba(245, 197, 24, 0.2);
+    }
+    .mode-btn.active {
+      background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+      color: var(--bg);
+      border-color: var(--gold);
+      box-shadow: 0 0 20px rgba(245, 197, 24, 0.4);
+    }
+
+    /* --- INDICATEUR PLANCHE (photo X/4) --- */
+    #strip-progress {
+      display: none;
+      position: fixed;
+      top: 5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Baloo 2', cursive;
+      font-size: 2vw;
+      font-weight: 800;
+      color: var(--gold);
+      z-index: 20;
+      text-shadow: 0 0 20px rgba(245, 197, 24, 0.5);
+    }
+
+    #strip-thumbs {
+      position: fixed;
+      bottom: 3vh;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 1vw;
+      z-index: 20;
+    }
+
+    #strip-thumbs img {
+      height: 10vh;
+      border-radius: 8px;
+      border: 2px solid var(--gold);
+      box-shadow: 0 0 15px rgba(245, 197, 24, 0.3);
+    }
+
+    /* --- COUNTDOWN OVERLAY (sur le live view) --- */
+    #countdown-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      background: rgba(26, 5, 38, 0.35);
+      pointer-events: none;
+    }
+
+    #countdown {
+      font-family: 'Baloo 2', cursive;
+      font-size: 20vw;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--gold-light), var(--magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 40px rgba(245, 197, 24, 0.5));
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.4); opacity: 0; }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* --- FLASH --- */
+    #flash {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, var(--gold-light), #fff, var(--magenta));
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+    /* --- ÉCRAN RÉSULTAT --- */
+    #screen-result {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 3vw;
+    }
+
+    #photo-display {
+      max-width: 60vw;
+      max-height: 78vh;
+      border-radius: 16px;
+      border: 3px solid var(--gold);
+      box-shadow:
+        0 0 40px rgba(245, 197, 24, 0.25),
+        0 0 80px rgba(233, 30, 140, 0.15);
+    }
+
+    #qr-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5vh;
+      background: var(--bg-card);
+      padding: 2vh 1.5vw;
+      border-radius: 16px;
+      border: 1px solid rgba(245, 197, 24, 0.2);
+    }
+
+    #qr-code {
+      width: 14vw;
+      height: 14vw;
+      border-radius: 12px;
+      background: #fff;
+      padding: 0.4vw;
+    }
+
+    #qr-label {
+      font-family: 'Baloo 2', cursive;
+      font-size: 1.1vw;
+      color: var(--gold-light);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    #cdn-status {
+      font-family: 'Mukta', sans-serif;
+      font-size: 0.75vw;
+      display: flex;
+      align-items: center;
+      gap: 0.3vw;
+      opacity: 0.6;
+    }
+
+    #cdn-status .dot {
+      width: 0.5vw;
+      height: 0.5vw;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+
+    #cdn-status .dot.pending {
+      background: var(--gold);
+      animation: blink 1s ease-in-out infinite;
+    }
+    #cdn-status .dot.done { background: var(--teal); }
+    #cdn-status .dot.error { background: var(--red); }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    #btn-ok {
+      font-family: 'Baloo 2', cursive;
+      font-size: 1.6vw;
+      font-weight: 800;
+      padding: 0.6vw 3vw;
+      border: none;
+      border-radius: 100px;
+      background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+      color: var(--bg);
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(245, 197, 24, 0.4);
+      margin-top: 1vh;
+    }
+    #btn-ok:hover {
+      transform: scale(1.06);
+      box-shadow: 0 4px 30px rgba(245, 197, 24, 0.6);
+    }
+
+    /* --- PROCESSING OVERLAY (sur la frame gelée) --- */
+    #processing-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5vh;
+      border-radius: 16px;
+      background: rgba(26, 5, 38, 0.4);
+      pointer-events: none;
+    }
+
+    #hold-pose-text {
+      font-family: 'Baloo 2', cursive;
+      font-size: 4vw;
+      font-weight: 800;
+      color: var(--gold-light);
+      text-shadow:
+        0 0 30px rgba(245, 197, 24, 0.6),
+        0 2px 4px rgba(0, 0, 0, 0.5);
+      animation: pulse-glow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse-glow {
+      from { opacity: 0.8; text-shadow: 0 0 20px rgba(245, 197, 24, 0.4), 0 2px 4px rgba(0,0,0,0.5); }
+      to { opacity: 1; text-shadow: 0 0 40px rgba(245, 197, 24, 0.8), 0 2px 4px rgba(0,0,0,0.5); }
+    }
+
+    .spinner-small {
+      width: 2vw;
+      height: 2vw;
+      border: 0.2vw solid rgba(245, 197, 24, 0.15);
+      border-top-color: var(--gold);
+      border-right-color: var(--magenta);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* --- PROCESSING (fallback plein écran pour strip) --- */
+    #screen-processing {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+      gap: 2vh;
+    }
+
+    .spinner {
+      width: 6vw;
+      height: 6vw;
+      border: 0.4vw solid rgba(245, 197, 24, 0.15);
+      border-top-color: var(--gold);
+      border-right-color: var(--magenta);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #processing-text {
+      font-family: 'Baloo 2', cursive;
+      font-size: 1.8vw;
+      color: var(--gold-light);
+      opacity: 0.7;
+    }
+
+    /* --- ERREUR --- */
+    #error {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--gold-light);
+      font-size: 1.8vw;
+      display: none;
+      text-align: center;
+      padding: 3vw;
+      background: rgba(212, 33, 61, 0.9);
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      z-index: 50;
+      font-family: 'Baloo 2', cursive;
+    }
+
+    #export-canvas { display: none; }
+
+    /* --- LIEN GALERIE --- */
+    #gallery-link {
+      position: fixed;
+      top: 5.5vh;
+      right: 2vw;
+      font-family: 'Baloo 2', cursive;
+      font-size: 0.9vw;
+      font-weight: 700;
+      color: var(--gold);
+      text-decoration: none;
+      cursor: pointer;
+      z-index: 10;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+    #gallery-link:hover { opacity: 1; }
+
+    /* --- SPARKLES ANIMATION --- */
+    @keyframes sparkle {
+      0%, 100% { opacity: 0; transform: scale(0); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+
+    .sparkle {
+      position: fixed;
+      width: 4px;
+      height: 4px;
+      background: var(--gold);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      animation: sparkle 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <!-- Décorations Bollywood -->
+  <div class="deco-top"></div>
+  <div class="deco-bottom"></div>
+  <div class="deco-side left">
+    <svg viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 0 Q60 50 30 100 Q0 150 30 200 Q60 250 30 300 Q0 350 30 400" stroke="url(#gLeft)" stroke-width="2" fill="none"/>
+      <circle cx="30" cy="50" r="15" stroke="url(#gLeft)" stroke-width="1" fill="none"/>
+      <circle cx="30" cy="150" r="20" stroke="url(#gLeft)" stroke-width="1" fill="none"/>
+      <circle cx="30" cy="250" r="15" stroke="url(#gLeft)" stroke-width="1" fill="none"/>
+      <circle cx="30" cy="350" r="20" stroke="url(#gLeft)" stroke-width="1" fill="none"/>
+      <defs><linearGradient id="gLeft" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f5c518"/><stop offset="100%" stop-color="#e91e8c"/></linearGradient></defs>
+    </svg>
+  </div>
+  <div class="deco-side right">
+    <svg viewBox="0 0 60 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 0 Q0 50 30 100 Q60 150 30 200 Q0 250 30 300 Q60 350 30 400" stroke="url(#gRight)" stroke-width="2" fill="none"/>
+      <circle cx="30" cy="50" r="15" stroke="url(#gRight)" stroke-width="1" fill="none"/>
+      <circle cx="30" cy="150" r="20" stroke="url(#gRight)" stroke-width="1" fill="none"/>
+      <circle cx="30" cy="250" r="15" stroke="url(#gRight)" stroke-width="1" fill="none"/>
+      <circle cx="30" cy="350" r="20" stroke="url(#gRight)" stroke-width="1" fill="none"/>
+      <defs><linearGradient id="gRight" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e91e8c"/><stop offset="100%" stop-color="#f5c518"/></linearGradient></defs>
+    </svg>
+  </div>
+
+  <div id="title">Bollywood Photobooth</div>
+  <a id="gallery-link" href="/gallery" target="_blank">Galerie</a>
+  <div id="flash"></div>
+  <canvas id="export-canvas"></canvas>
+
+  <!-- LIVE VIEW -->
+  <div id="screen-live">
+    <div id="view-container">
+      <img id="liveview" src="/preview"{% if mirror_liveview %} style="transform: scaleX(-1)"{% endif %} />
+      <canvas id="overlay-canvas"{% if mirror_liveview %} style="transform: scaleX(-1)"{% endif %}></canvas>
+      <div id="countdown-overlay">
+        <div id="countdown"></div>
+      </div>
+      <div id="processing-overlay">
+        <div id="hold-pose-text">Gardez la pose !</div>
+        <div class="spinner-small"></div>
+      </div>
+    </div>
+    <div id="controls">
+      <div class="control-group">
+        <div class="control-label">Filtres</div>
+        <div class="control-row" id="filters"></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label">Accessoires</div>
+        <div class="control-row" id="props"></div>
+      </div>
+    </div>
+    <div id="mode-selector">
+      <button class="mode-btn active" data-mode="single">1 Photo</button>
+      <button class="mode-btn" data-mode="strip">Planche x4</button>
+    </div>
+    <button id="btn-capture">Action !</button>
+  </div>
+
+  <!-- INDICATEURS PLANCHE -->
+  <div id="strip-progress"></div>
+  <div id="strip-thumbs"></div>
+
+  <!-- COUNTDOWN (supprimé, maintenant en overlay dans view-container) -->
+
+  <!-- PROCESSING -->
+  <div id="screen-processing">
+    <div class="spinner"></div>
+    <div id="processing-text">Lights, Camera...</div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result">
+    <img id="photo-display"{% if mirror_display %} style="transform: scaleX(-1)"{% endif %} />
+    <div id="qr-panel">
+      <img id="qr-code" />
+      <div id="qr-label">Scanne pour<br>telecharger ta photo</div>
+      <div id="cdn-status"></div>
+      <button id="btn-ok">OK</button>
+    </div>
+  </div>
+
+  <div id="error"></div>
+
+  <!-- MediaPipe Face Mesh -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+
+  <script>
+    // =============================================
+    // SPARKLES BACKGROUND
+    // =============================================
+    for (let i = 0; i < 20; i++) {
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.style.left = Math.random() * 100 + 'vw';
+      s.style.top = Math.random() * 100 + 'vh';
+      s.style.animationDelay = (Math.random() * 3) + 's';
+      s.style.animationDuration = (2 + Math.random() * 3) + 's';
+      s.style.width = s.style.height = (2 + Math.random() * 4) + 'px';
+      s.style.background = Math.random() > 0.5 ? 'var(--gold)' : 'var(--magenta)';
+      document.body.appendChild(s);
+    }
+
+    // =============================================
+    // CONFIG
+    // =============================================
+
+    const FILTERS = [
+      { name: 'Normal',  css: 'none' },
+      { name: 'N&B',     css: 'grayscale(100%)' },
+      { name: 'Sepia',   css: 'sepia(90%)' },
+      { name: 'Vintage', css: 'sepia(40%) contrast(1.1) brightness(0.9) saturate(0.8)' },
+      { name: 'Punch',   css: 'contrast(1.4) saturate(1.6)' },
+      { name: 'Cool',    css: 'saturate(0.8) hue-rotate(15deg) brightness(1.05)' },
+      { name: 'Warm',    css: 'sepia(25%) saturate(1.3) brightness(1.05)' },
+      { name: 'Drama',   css: 'contrast(1.5) brightness(0.85) saturate(1.2)' },
+    ];
+
+    const PROPS = [
+      { name: 'Aucun',     src: null,                           type: null },
+      { name: 'Lunettes',  src: '/static/props/glasses.svg',    type: 'eyes' },
+      { name: 'Chapeau',   src: '/static/props/hat.svg',        type: 'head' },
+      { name: 'Turban',    src: '/static/props/turban.svg',     type: 'head' },
+      { name: 'Couronne',  src: '/static/props/crown.svg',      type: 'head' },
+      { name: 'Bindi',     src: '/static/props/bindi.svg',      type: 'forehead' },
+      { name: 'Tikka',     src: '/static/props/tikka.svg',      type: 'tikka' },
+      { name: 'Maala',     src: '/static/props/maala.svg',      type: 'neck' },
+      { name: 'Moustache', src: '/static/props/mustache.svg',   type: 'mouth' },
+      { name: 'Noeud pap', src: '/static/props/bow_tie.svg',    type: 'chin' },
+    ];
+
+    const LM = {
+      leftEyeOuter:  263,
+      rightEyeOuter: 33,
+      leftEyeInner:  362,
+      rightEyeInner: 133,
+      eyeMidLeft:    263,
+      eyeMidRight:   33,
+      noseTip:       1,
+      foreheadTop:   10,
+      foreheadMid:   151,  // entre les sourcils (glabelle)
+      chinBottom:    152,
+      lipTop:        0,
+      lipBottom:     17,
+      leftCheek:     234,
+      rightCheek:    454,
+    };
+
+    // =============================================
+    // STATE
+    // =============================================
+
+    let currentFilter = FILTERS[0];
+    let currentProp = PROPS[0];
+    let currentMode = 'single'; // 'single' ou 'strip'
+    let currentFaces = [];
+    let propImages = {};
+    let busy = false;
+    let faceDetectionRunning = false;
+
+    // =============================================
+    // DOM
+    // =============================================
+
+    const liveviewEl       = document.getElementById('liveview');
+    const overlayCanvas    = document.getElementById('overlay-canvas');
+    const overlayCtx       = overlayCanvas.getContext('2d');
+    const filtersEl        = document.getElementById('filters');
+    const propsEl          = document.getElementById('props');
+    const btnEl            = document.getElementById('btn-capture');
+    const countdownEl      = document.getElementById('countdown');
+    const photoEl          = document.getElementById('photo-display');
+    const qrCodeEl         = document.getElementById('qr-code');
+    const flashEl          = document.getElementById('flash');
+    const errorEl          = document.getElementById('error');
+    const exportCanvas     = document.getElementById('export-canvas');
+
+    const screenLive         = document.getElementById('screen-live');
+    const screenProcessing   = document.getElementById('screen-processing');
+    const screenResult       = document.getElementById('screen-result');
+    const countdownOverlay   = document.getElementById('countdown-overlay');
+    const processingOverlay  = document.getElementById('processing-overlay');
+    const btnOk              = document.getElementById('btn-ok');
+    const cdnStatusEl        = document.getElementById('cdn-status');
+    let cdnPollTimer = null;
+
+    function waitForOk() {
+      return new Promise(resolve => {
+        function onClick() { btnOk.removeEventListener('click', onClick); resolve(); }
+        btnOk.addEventListener('click', onClick);
+      });
+    }
+
+    function startCdnStatusPoll(filenames) {
+      if (cdnPollTimer) clearInterval(cdnPollTimer);
+      const state = {};
+      filenames.forEach(f => state[f] = 'pending');
+      renderCdnStatus(state);
+
+      cdnPollTimer = setInterval(async () => {
+        for (const f of filenames) {
+          if (state[f] === 'done') continue;
+          try {
+            const res = await fetch(`/cdn-status/${f}`);
+            const data = await res.json();
+            state[f] = data.status;
+          } catch {}
+        }
+        renderCdnStatus(state);
+        if (Object.values(state).every(s => s === 'done' || s === 'error')) {
+          clearInterval(cdnPollTimer);
+          cdnPollTimer = null;
+        }
+      }, 1500);
+    }
+
+    function stopCdnStatusPoll() {
+      if (cdnPollTimer) { clearInterval(cdnPollTimer); cdnPollTimer = null; }
+      cdnStatusEl.innerHTML = '';
+    }
+
+    function renderCdnStatus(state) {
+      const entries = Object.entries(state);
+      const allDone = entries.every(([, s]) => s === 'done');
+      const hasError = entries.some(([, s]) => s === 'error');
+
+      if (allDone) {
+        cdnStatusEl.innerHTML = '<span class="dot done"></span> En ligne';
+      } else if (hasError) {
+        cdnStatusEl.innerHTML = '<span class="dot error"></span> Erreur upload';
+      } else {
+        cdnStatusEl.innerHTML = '<span class="dot pending"></span> Upload en cours...';
+      }
+    }
+    const stripProgress      = document.getElementById('strip-progress');
+    const stripThumbs        = document.getElementById('strip-thumbs');
+
+    // =============================================
+    // MODE SELECTOR
+    // =============================================
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (busy) return;
+        currentMode = btn.dataset.mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    // =============================================
+    // PRELOAD PROP IMAGES
+    // =============================================
+
+    PROPS.forEach(p => {
+      if (p.src) {
+        const img = new Image();
+        img.src = p.src;
+        propImages[p.name] = img;
+      }
+    });
+
+    // =============================================
+    // FILTRES UI
+    // =============================================
+
+    FILTERS.forEach((f, i) => {
+      const btn = document.createElement('div');
+      btn.className = 'filter-btn' + (i === 0 ? ' active' : '');
+      btn.innerHTML = `<img src="/preview-thumb" style="filter:${f.css}"><span class="item-name">${f.name}</span>`;
+      btn.onclick = () => selectFilter(i);
+      filtersEl.appendChild(btn);
+    });
+
+    function selectFilter(index) {
+      currentFilter = FILTERS[index];
+      liveviewEl.style.filter = currentFilter.css;
+      document.querySelectorAll('.filter-btn').forEach((b, i) => {
+        b.classList.toggle('active', i === index);
+      });
+    }
+
+    // =============================================
+    // PROPS UI
+    // =============================================
+
+    PROPS.forEach((p, i) => {
+      const btn = document.createElement('div');
+      btn.className = 'prop-btn' + (i === 0 ? ' active' : '');
+      if (p.src) {
+        btn.innerHTML = `<img src="${p.src}"><span class="item-name">${p.name}</span>`;
+      } else {
+        btn.innerHTML = `<span class="no-prop">--</span><span class="item-name">${p.name}</span>`;
+      }
+      btn.onclick = () => selectProp(i);
+      propsEl.appendChild(btn);
+    });
+
+    function selectProp(index) {
+      currentProp = PROPS[index];
+      document.querySelectorAll('.prop-btn').forEach((b, i) => {
+        b.classList.toggle('active', i === index);
+      });
+      if (!currentProp.src) {
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      }
+    }
+
+    // =============================================
+    // MEDIAPIPE FACE MESH
+    // =============================================
+
+    let faceMesh = null;
+    const captureCanvas = document.createElement('canvas');
+    const captureCtx = captureCanvas.getContext('2d');
+
+    function initFaceMesh() {
+      faceMesh = new FaceMesh({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+      });
+      faceMesh.setOptions({
+        maxNumFaces: 4,
+        refineLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+      faceMesh.onResults(onFaceResults);
+      startFaceDetectionLoop();
+    }
+
+    function onFaceResults(results) {
+      currentFaces = results.multiFaceLandmarks || [];
+      drawProps();
+    }
+
+    function startFaceDetectionLoop() {
+      if (faceDetectionRunning) return;
+      faceDetectionRunning = true;
+
+      async function loop() {
+        if (!faceDetectionRunning) return;
+        const w = liveviewEl.naturalWidth || liveviewEl.width;
+        const h = liveviewEl.naturalHeight || liveviewEl.height;
+        if (w > 0 && h > 0 && faceMesh) {
+          captureCanvas.width = w;
+          captureCanvas.height = h;
+          captureCtx.drawImage(liveviewEl, 0, 0, w, h);
+          try { await faceMesh.send({ image: captureCanvas }); } catch (e) {}
+        }
+        if (faceDetectionRunning) setTimeout(loop, 66);
+      }
+      loop();
+    }
+
+    function stopFaceDetection() { faceDetectionRunning = false; }
+
+    // =============================================
+    // DESSIN DES PROPS
+    // =============================================
+
+    function drawProps() {
+      const rect = liveviewEl.getBoundingClientRect();
+      overlayCanvas.width = rect.width;
+      overlayCanvas.height = rect.height;
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+      if (!currentProp.src || currentFaces.length === 0) return;
+      const img = propImages[currentProp.name];
+      if (!img || !img.complete) return;
+
+      const W = overlayCanvas.width;
+      const H = overlayCanvas.height;
+
+      currentFaces.forEach(landmarks => {
+        const get = (idx) => ({ x: landmarks[idx].x * W, y: landmarks[idx].y * H });
+        let x, y, w, h, angle;
+
+        const leftEye = get(LM.eyeMidLeft);
+        const rightEye = get(LM.eyeMidRight);
+        angle = Math.atan2(leftEye.y - rightEye.y, leftEye.x - rightEye.x);
+        const faceWidth = Math.hypot(leftEye.x - rightEye.x, leftEye.y - rightEye.y);
+
+        if (currentProp.type === 'eyes') {
+          const cx = (leftEye.x + rightEye.x) / 2;
+          const cy = (leftEye.y + rightEye.y) / 2;
+          w = faceWidth * 1.8;
+          h = w * (img.naturalHeight / img.naturalWidth);
+          drawRotated(img, cx, cy, w, h, angle);
+        } else if (currentProp.type === 'head') {
+          const forehead = get(LM.foreheadTop);
+          const cx = (leftEye.x + rightEye.x) / 2;
+          w = faceWidth * 2;
+          h = w * (img.naturalHeight / img.naturalWidth);
+          drawRotated(img, cx, forehead.y - h * 0.35, w, h, angle);
+        } else if (currentProp.type === 'mouth') {
+          const nose = get(LM.noseTip);
+          const lipTop = get(LM.lipTop);
+          w = faceWidth * 1.0;
+          h = w * (img.naturalHeight / img.naturalWidth);
+          drawRotated(img, (nose.x + lipTop.x) / 2, (nose.y + lipTop.y) / 2, w, h, angle);
+        } else if (currentProp.type === 'forehead') {
+          // Bindi : petit, centré entre les sourcils
+          const nose = get(LM.noseTip);
+          const forehead = get(LM.foreheadTop);
+          const cx = (leftEye.x + rightEye.x) / 2;
+          const cy = forehead.y + (nose.y - forehead.y) * 0.25;
+          w = faceWidth * 0.35;
+          h = w * (img.naturalHeight / img.naturalWidth);
+          drawRotated(img, cx, cy, w, h, angle);
+        } else if (currentProp.type === 'tikka') {
+          // Tikka : chaîne verticale du haut du front au bindi
+          const nose = get(LM.noseTip);
+          const forehead = get(LM.foreheadTop);
+          const cx = (leftEye.x + rightEye.x) / 2;
+          const cy = forehead.y - faceWidth * 0.15;
+          w = faceWidth * 0.45;
+          h = faceWidth * 1.2;
+          drawRotated(img, cx, cy + h * 0.35, w, h, angle);
+        } else if (currentProp.type === 'neck') {
+          // Maala/collier : sous le menton, large
+          const chin = get(LM.chinBottom);
+          const cx = (leftEye.x + rightEye.x) / 2;
+          w = faceWidth * 2.2;
+          h = w * (img.naturalHeight / img.naturalWidth);
+          drawRotated(img, cx, chin.y + h * 0.25, w, h, angle);
+        } else if (currentProp.type === 'chin') {
+          const chin = get(LM.chinBottom);
+          const cx = (leftEye.x + rightEye.x) / 2;
+          w = faceWidth * 1.0;
+          h = w * (img.naturalHeight / img.naturalWidth);
+          drawRotated(img, cx, chin.y + h * 0.3, w, h, angle);
+        }
+      });
+    }
+
+    function drawRotated(img, cx, cy, w, h, angle) {
+      overlayCtx.save();
+      overlayCtx.translate(cx, cy);
+      overlayCtx.rotate(angle);
+      overlayCtx.drawImage(img, -w / 2, -h / 2, w, h);
+      overlayCtx.restore();
+    }
+
+    // =============================================
+    // RACCOURCIS CLAVIER
+    // =============================================
+
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        if (screenResult.style.display !== 'none') { btnOk.click(); }
+        else if (!busy) { startCapture(); }
+      }
+      if (e.code === 'ArrowRight' && !busy) { selectFilter((FILTERS.indexOf(currentFilter) + 1) % FILTERS.length); }
+      if (e.code === 'ArrowLeft' && !busy) { selectFilter((FILTERS.indexOf(currentFilter) - 1 + FILTERS.length) % FILTERS.length); }
+      if (e.code === 'ArrowUp' && !busy) { e.preventDefault(); selectProp((PROPS.indexOf(currentProp) + 1) % PROPS.length); }
+      if (e.code === 'ArrowDown' && !busy) { e.preventDefault(); selectProp((PROPS.indexOf(currentProp) - 1 + PROPS.length) % PROPS.length); }
+      if (e.code === 'Tab' && !busy) {
+        e.preventDefault();
+        currentMode = currentMode === 'single' ? 'strip' : 'single';
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+      }
+    });
+
+    btnEl.addEventListener('click', () => { if (!busy) startCapture(); });
+
+    // =============================================
+    // FLUX DE CAPTURE
+    // =============================================
+
+    function showScreen(screen) {
+      [screenLive, screenProcessing, screenResult].forEach(s => s.style.display = 'none');
+      countdownOverlay.style.display = 'none';
+      processingOverlay.style.display = 'none';
+      screen.style.display = 'flex';
+    }
+
+    const COUNTDOWN_STRIP = {{ countdown_strip }};
+
+    async function doCountdown(seconds) {
+      seconds = seconds || 3;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      btnEl.style.display = 'none';
+      document.getElementById('controls').style.display = 'none';
+      document.getElementById('mode-selector').style.display = 'none';
+      countdownOverlay.style.display = 'flex';
+
+      for (let i = seconds; i >= 1; i--) {
+        countdownEl.textContent = i;
+        countdownEl.style.animation = 'none';
+        countdownEl.offsetHeight;
+        countdownEl.style.animation = 'pulse 0.8s ease-in-out';
+        playCountdownBeep();
+        await sleep(1000);
+      }
+
+      countdownOverlay.style.display = 'none';
+      playShutterBeep();
+      flashEl.style.animation = 'flash 0.5s ease-out';
+      setTimeout(() => { flashEl.style.animation = ''; }, 500);
+
+      // Geler la dernière frame du live view
+      const w = liveviewEl.naturalWidth || liveviewEl.width;
+      const h = liveviewEl.naturalHeight || liveviewEl.height;
+      if (w > 0 && h > 0) {
+        captureCanvas.width = w;
+        captureCanvas.height = h;
+        captureCtx.drawImage(liveviewEl, 0, 0, w, h);
+        liveviewEl.src = captureCanvas.toDataURL('image/jpeg', 0.92);
+      }
+    }
+
+    async function startCapture() {
+      busy = true;
+      const filterCss = currentFilter.css;
+      const prop = currentProp;
+
+      if (currentMode === 'strip') {
+        await startStripCapture(filterCss, prop);
+      } else {
+        await startSingleCapture(filterCss, prop);
+      }
+
+      stopCdnStatusPoll();
+      liveviewEl.src = '/preview?' + Date.now();
+      liveviewEl.style.filter = currentFilter.css;
+      stripProgress.style.display = 'none';
+      stripThumbs.style.display = 'none';
+      stripThumbs.innerHTML = '';
+      showScreen(screenLive);
+      btnEl.style.display = '';
+      document.getElementById('controls').style.display = '';
+      document.getElementById('mode-selector').style.display = '';
+      startFaceDetectionLoop();
+      busy = false;
+    }
+
+    async function startSingleCapture(filterCss, prop) {
+      await doCountdown();
+      stopFaceDetection();
+      processingOverlay.style.display = 'flex';
+
+      try {
+        const res = await fetch('/capture', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur inconnue');
+
+        const finalFilename = await composeFinalPhoto(data.filename, filterCss, prop);
+        processingOverlay.style.display = 'none';
+        photoEl.src = `/photos/preview/${finalFilename}`;
+        photoEl.style.filter = 'none';
+        qrCodeEl.src = `/qr/${finalFilename}`;
+        showScreen(screenResult);
+        startCdnStatusPoll([finalFilename]);
+        await waitForOk();
+      } catch (err) {
+        processingOverlay.style.display = 'none';
+        showError(err.message);
+      }
+    }
+
+    async function startStripCapture(filterCss, prop) {
+      const STRIP_COUNT = 4;
+      const rawFilenames = [];
+
+      stripProgress.style.display = 'block';
+      stripThumbs.style.display = 'flex';
+
+      try {
+        // Première pose : countdown avec live view
+        stripProgress.textContent = 'Pose 1 / ' + STRIP_COUNT;
+        await doCountdown(COUNTDOWN_STRIP);
+        stopFaceDetection();
+
+        // Préparer l'appareil une seule fois (coupe le live view)
+        processingOverlay.style.display = 'flex';
+        const prepRes = await fetch('/strip-start', { method: 'POST' });
+        const prepData = await prepRes.json();
+        if (!prepRes.ok) throw new Error(prepData.error || 'Erreur préparation');
+
+        // Phase 1 : capturer les 4 photos rapidement
+        for (let i = 0; i < STRIP_COUNT; i++) {
+          stripProgress.textContent = `Pose ${i + 1} / ${STRIP_COUNT}`;
+
+          if (i > 0) {
+            processingOverlay.style.display = 'none';
+            await doCountdown(COUNTDOWN_STRIP);
+            processingOverlay.style.display = 'flex';
+          }
+
+          const res = await fetch('/strip-shot', { method: 'POST' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Erreur capture');
+
+          rawFilenames.push(data.filename);
+        }
+
+        // Libérer l'appareil photo dès que toutes les captures sont faites
+        fetch('/strip-end', { method: 'POST' }).catch(() => {});
+
+        // Phase 2 : appliquer filtres/props et afficher les miniatures
+        stripProgress.textContent = 'Traitement...';
+        const finalFiles = [];
+        for (const fname of rawFilenames) {
+          const finalFile = await composeFinalPhoto(fname, filterCss, prop);
+          finalFiles.push(finalFile);
+
+          const thumb = document.createElement('img');
+          thumb.src = `/photos/preview/${finalFile}`;
+          stripThumbs.appendChild(thumb);
+        }
+
+        // Phase 3 : assembler la planche
+        stripProgress.textContent = 'Assemblage...';
+
+        const assembleRes = await fetch('/assemble-strip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filenames: finalFiles }),
+        });
+        const assembleData = await assembleRes.json();
+        if (!assembleRes.ok) throw new Error(assembleData.error || 'Erreur assemblage');
+
+        processingOverlay.style.display = 'none';
+        photoEl.src = `/photos/preview/${assembleData.filename}`;
+        photoEl.style.filter = 'none';
+        qrCodeEl.src = `/qr/${assembleData.filename}`;
+        showScreen(screenResult);
+        startCdnStatusPoll([assembleData.filename]);
+        await waitForOk();
+      } catch (err) {
+        processingOverlay.style.display = 'none';
+        fetch('/strip-end', { method: 'POST' }).catch(() => {});
+        showError(err.message);
+      }
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+      setTimeout(() => { errorEl.style.display = 'none'; }, 4000);
+    }
+
+    async function composeFinalPhoto(originalFilename, filterCss, prop) {
+      const needsProcessing = filterCss !== 'none' || prop.src;
+      if (!needsProcessing) return originalFilename;
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = `/photos/${originalFilename}`; });
+
+      const W = img.naturalWidth, H = img.naturalHeight;
+      exportCanvas.width = W;
+      exportCanvas.height = H;
+      const ctx = exportCanvas.getContext('2d');
+
+      ctx.filter = filterCss;
+      ctx.drawImage(img, 0, 0);
+      ctx.filter = 'none';
+
+      if (prop.src && faceMesh) {
+        const propImg = propImages[prop.name];
+        if (propImg && propImg.complete) {
+          const faces = await detectFacesOnImage(img);
+          faces.forEach(landmarks => {
+            const get = (idx) => ({ x: landmarks[idx].x * W, y: landmarks[idx].y * H });
+            const leftEye = get(LM.eyeMidLeft);
+            const rightEye = get(LM.eyeMidRight);
+            const angle = Math.atan2(leftEye.y - rightEye.y, leftEye.x - rightEye.x);
+            const faceWidth = Math.hypot(leftEye.x - rightEye.x, leftEye.y - rightEye.y);
+
+            let cx, cy, w, h;
+            if (prop.type === 'eyes') {
+              cx = (leftEye.x + rightEye.x) / 2; cy = (leftEye.y + rightEye.y) / 2;
+              w = faceWidth * 1.8; h = w * (propImg.naturalHeight / propImg.naturalWidth);
+            } else if (prop.type === 'head') {
+              const forehead = get(LM.foreheadTop); cx = (leftEye.x + rightEye.x) / 2;
+              w = faceWidth * 2; h = w * (propImg.naturalHeight / propImg.naturalWidth); cy = forehead.y - h * 0.35;
+            } else if (prop.type === 'mouth') {
+              const nose = get(LM.noseTip); const lipTop = get(LM.lipTop);
+              cx = (nose.x + lipTop.x) / 2; cy = (nose.y + lipTop.y) / 2;
+              w = faceWidth * 1.0; h = w * (propImg.naturalHeight / propImg.naturalWidth);
+            } else if (prop.type === 'forehead') {
+              const nose = get(LM.noseTip); const forehead = get(LM.foreheadTop);
+              cx = (leftEye.x + rightEye.x) / 2; cy = forehead.y + (nose.y - forehead.y) * 0.25;
+              w = faceWidth * 0.35; h = w * (propImg.naturalHeight / propImg.naturalWidth);
+            } else if (prop.type === 'tikka') {
+              const nose = get(LM.noseTip); const forehead = get(LM.foreheadTop);
+              cx = (leftEye.x + rightEye.x) / 2;
+              w = faceWidth * 0.45; h = faceWidth * 1.2;
+              cy = (forehead.y - faceWidth * 0.15) + h * 0.35;
+            } else if (prop.type === 'neck') {
+              const chin = get(LM.chinBottom); cx = (leftEye.x + rightEye.x) / 2;
+              w = faceWidth * 2.2; h = w * (propImg.naturalHeight / propImg.naturalWidth); cy = chin.y + h * 0.25;
+            } else if (prop.type === 'chin') {
+              const chin = get(LM.chinBottom); cx = (leftEye.x + rightEye.x) / 2;
+              w = faceWidth * 1.0; h = w * (propImg.naturalHeight / propImg.naturalWidth); cy = chin.y + h * 0.3;
+            }
+            if (cx !== undefined) {
+              ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle);
+              ctx.drawImage(propImg, -w / 2, -h / 2, w, h); ctx.restore();
+            }
+          });
+        }
+      }
+
+      const blob = await new Promise(r => exportCanvas.toBlob(r, 'image/jpeg', 0.92));
+      const suffix = [
+        filterCss !== 'none' ? currentFilter.name.toLowerCase() : '',
+        prop.src ? prop.name.toLowerCase().replace(/ /g, '') : '',
+      ].filter(Boolean).join('_');
+      const finalName = originalFilename.replace('.jpg', `_${suffix || 'final'}.jpg`);
+      const form = new FormData();
+      form.append('file', blob, finalName);
+      form.append('filename', finalName);
+      await fetch('/upload-filtered', { method: 'POST', body: form });
+      return finalName;
+    }
+
+    function detectFacesOnImage(image) {
+      return new Promise((resolve) => {
+        if (!faceMesh) { resolve([]); return; }
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = image.naturalWidth; tmpCanvas.height = image.naturalHeight;
+        tmpCanvas.getContext('2d').drawImage(image, 0, 0);
+        // Temporairement remplacer le callback pour capturer le résultat
+        faceMesh.onResults((results) => {
+          resolve(results.multiFaceLandmarks || []);
+          // Restaurer le callback normal
+          faceMesh.onResults(onFaceResults);
+        });
+        faceMesh.send({ image: tmpCanvas });
+      });
+    }
+
+    // =============================================
+    // INIT
+    // =============================================
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // =============================================
+    // SONS
+    // =============================================
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playBeep(freq, duration, volume) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function playCountdownBeep() {
+      // Bip court, ton moyen
+      playBeep(880, 0.15, 0.4);
+    }
+
+    function playShutterBeep() {
+      // Bip plus long et aigu pour le déclenchement
+      playBeep(1320, 0.08, 0.5);
+      setTimeout(() => playBeep(1760, 0.25, 0.5), 80);
+    }
+
+    liveviewEl.addEventListener('load', () => { initFaceMesh(); });
+    if (liveviewEl.complete && liveviewEl.naturalWidth > 0) { initFaceMesh(); }
+  </script>
+</body>
+</html>

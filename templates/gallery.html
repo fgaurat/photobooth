@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bollywood Photobooth — Galerie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Mukta:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #f5c518;
+      --gold-light: #ffe066;
+      --magenta: #e91e8c;
+      --purple-deep: #2d004f;
+      --bg: #1a0526;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(233, 30, 140, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, rgba(106, 13, 173, 0.15) 0%, transparent 50%);
+      color: #fff;
+      font-family: 'Mukta', sans-serif;
+      padding: 4vh 4vw;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-family: 'Baloo 2', cursive;
+      font-size: 2.5vw;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 3vh;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5vw;
+    }
+
+    .grid img {
+      width: 100%;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 2px solid rgba(245, 197, 24, 0.2);
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .grid img:hover {
+      transform: scale(1.03);
+      border-color: var(--gold);
+      box-shadow: 0 0 25px rgba(245, 197, 24, 0.2);
+    }
+
+    .empty {
+      font-family: 'Baloo 2', cursive;
+      font-size: 1.5vw;
+      color: var(--gold);
+      opacity: 0.4;
+      text-align: center;
+      margin-top: 20vh;
+    }
+
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 5, 38, 0.95);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-direction: column;
+      gap: 2vh;
+    }
+
+    #lightbox img { max-width: 85vw; max-height: 75vh; border-radius: 12px; border: 2px solid var(--gold); }
+    #lightbox .qr { width: 120px; height: 120px; background: #fff; border-radius: 8px; padding: 4px; border: none; }
+    #lightbox .hint { font-size: 0.9vw; color: var(--gold); opacity: 0.4; font-family: 'Mukta', sans-serif; }
+
+    a.back {
+      font-family: 'Baloo 2', cursive;
+      color: var(--gold);
+      text-decoration: none;
+      font-size: 1vw;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    a.back:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <a class="back" href="/">← Retour au photobooth</a>
+  <h1>Galerie</h1>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">Aucune photo pour l'instant</div>
+
+  <div id="lightbox">
+    <img id="lb-photo" />
+    <img id="lb-qr" class="qr" />
+    <div class="hint">Cliquer pour fermer</div>
+  </div>
+
+  <script>
+    const gridEl = document.getElementById('grid');
+    const emptyEl = document.getElementById('empty');
+    const lightboxEl = document.getElementById('lightbox');
+    const lbPhoto = document.getElementById('lb-photo');
+    const lbQr = document.getElementById('lb-qr');
+
+    lightboxEl.addEventListener('click', () => { lightboxEl.style.display = 'none'; });
+
+    async function load() {
+      const files = await (await fetch('/api/gallery')).json();
+      if (files.length === 0) { emptyEl.style.display = 'block'; return; }
+      gridEl.innerHTML = '';
+      files.forEach(f => {
+        const img = document.createElement('img');
+        img.src = `/photos/${f}`;
+        img.loading = 'lazy';
+        img.onclick = () => {
+          lbPhoto.src = `/photos/${f}`;
+          lbQr.src = `/qr/${f}`;
+          lightboxEl.style.display = 'flex';
+        };
+        gridEl.appendChild(img);
+      });
+    }
+
+    load();
+    setInterval(load, 10000);
+  </script>
+</body>
+</html>
