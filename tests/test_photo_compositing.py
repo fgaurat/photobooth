@@ -212,3 +212,34 @@ def test_compose_ignores_fixed_font_size_when_font_file_is_invalid(tmp_path):
     )
 
     assert result.size == (1000, 2000)
+
+
+def test_compose_renders_a_multiline_message_taller_than_a_single_line():
+    photo = Image.new("RGB", (400, 600), "black")
+    background = Image.new("RGB", (1000, 2000), "black")
+    crop_box = (0, 1450, 1000, 2000)
+
+    two_lines = compose_photo_on_background(
+        photo,
+        background,
+        message="Line one\nLine two",
+        font_path=SAMARKAN_FONT_PATH,
+        font_size=60,
+    )
+    one_line = compose_photo_on_background(
+        photo,
+        background,
+        message="Line one",
+        font_path=SAMARKAN_FONT_PATH,
+        font_size=60,
+    )
+
+    def rendered_height(image):
+        text_zone = image.crop(crop_box)
+        diff = ImageChops.difference(text_zone, Image.new("RGB", text_zone.size, (0, 0, 0)))
+        bbox = diff.getbbox()
+        assert bbox is not None
+        _, top, _, bottom = bbox
+        return bottom - top
+
+    assert rendered_height(two_lines) > rendered_height(one_line) * 1.5

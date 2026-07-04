@@ -34,7 +34,7 @@ ENABLE_FACE_PROPS = os.getenv("ENABLE_FACE_PROPS", "false").lower() == "true"
 BACKGROUNDS_DIR = os.path.join(os.path.dirname(__file__), "static", "backgrounds")
 FONTS_DIR = os.path.join(os.path.dirname(__file__), "static", "fonts")
 PHOTO_BACKGROUND = os.getenv("PHOTO_BACKGROUND", "black.png")
-PHOTO_MESSAGE = os.getenv("PHOTO_MESSAGE", "")
+PHOTO_MESSAGE = os.getenv("PHOTO_MESSAGE", "").replace("\\n", "\n")
 PHOTO_MESSAGE_FONT = os.getenv("PHOTO_MESSAGE_FONT", "")
 PHOTO_MESSAGE_COLOR = os.getenv("PHOTO_MESSAGE_COLOR", "white")
 _photo_message_size = os.getenv("PHOTO_MESSAGE_SIZE", "")

@@ -87,11 +87,15 @@ def compose_photo_on_background(
 
             if font is not None:
                 draw = ImageDraw.Draw(canvas)
-                left, top, right, bottom = draw.textbbox((0, 0), message, font=font)
+                left, top, right, bottom = draw.textbbox(
+                    (0, 0), message, font=font, align="center"
+                )
                 text_w = right - left
                 text_h = bottom - top
                 text_x = side_margin + (window_w - text_w) / 2 - left
                 text_y = text_zone_top + (text_zone_height - text_h) / 2 - top
-                draw.text((text_x, text_y), message, font=font, fill=color)
+                draw.text(
+                    (text_x, text_y), message, font=font, fill=color, align="center"
+                )
 
     return canvas
