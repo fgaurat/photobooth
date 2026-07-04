@@ -196,6 +196,23 @@ def test_compose_skips_message_when_font_file_is_missing():
     )
 
     assert result.size == (1000, 2000)
+
+
+def test_compose_skips_message_when_font_file_is_invalid(tmp_path):
+    photo = Image.new("RGB", (400, 600), "red")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    bad_font_path = tmp_path / "not_a_font.ttf"
+    bad_font_path.write_bytes(b"this is not a valid font file")
+
+    result = compose_photo_on_background(
+        photo,
+        background,
+        message="Anniversaire de Laura",
+        font_path=str(bad_font_path),
+    )
+
+    assert result.size == (1000, 2000)
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -266,27 +283,34 @@ def compose_photo_on_background(
         text_zone_height = bg_h - bottom_margin - text_zone_top
 
         if text_zone_height > 0:
-            font = fit_font_size(
-                lambda size: ImageFont.truetype(font_path, size),
-                message,
-                window_w,
-                text_zone_height,
-            )
-            draw = ImageDraw.Draw(canvas)
-            left, top, right, bottom = draw.textbbox((0, 0), message, font=font)
-            text_w = right - left
-            text_h = bottom - top
-            text_x = side_margin + (window_w - text_w) / 2 - left
-            text_y = text_zone_top + (text_zone_height - text_h) / 2 - top
-            draw.text((text_x, text_y), message, font=font, fill="white")
+            try:
+                font = fit_font_size(
+                    lambda size: ImageFont.truetype(font_path, size),
+                    message,
+                    window_w,
+                    text_zone_height,
+                )
+            except OSError:
+                font = None
+
+            if font is not None:
+                draw = ImageDraw.Draw(canvas)
+                left, top, right, bottom = draw.textbbox((0, 0), message, font=font)
+                text_w = right - left
+                text_h = bottom - top
+                text_x = side_margin + (window_w - text_w) / 2 - left
+                text_y = text_zone_top + (text_zone_height - text_h) / 2 - top
+                draw.text((text_x, text_y), message, font=font, fill="white")
 
     return canvas
 ```
 
+`ImageFont.truetype` raises `OSError` for a file that exists but isn't a valid/loadable font (as opposed to `os.path.isfile` returning `False`, which is already handled). This keeps the documented contract — "never raises on a missing/invalid font_path" — honest for both failure modes.
+
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `uv run pytest tests/test_photo_compositing.py -v`
-Expected: 6 passed
+Expected: 7 passed
 
 - [ ] **Step 5: Commit**
 
@@ -530,7 +554,7 @@ PHOTO_MESSAGE_FONT=samarkan/SAMAN___.TTF
 - [ ] **Step 2: Run the full test suite**
 
 Run: `uv run pytest -v`
-Expected: all tests pass (6 from Tasks 1-2, no regressions).
+Expected: all tests pass (7 from Tasks 1-2, no regressions).
 
 - [ ] **Step 3: End-to-end manual check with a real capture**
 
