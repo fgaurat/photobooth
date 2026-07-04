@@ -1,6 +1,8 @@
 """Pure image-compositing helpers for the single-photo background feature."""
 
-from PIL import Image, ImageDraw
+import os
+
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 
 def fit_font_size(font_loader, text, max_width, max_height, min_size=10, max_size=500):
@@ -20,3 +22,52 @@ def fit_font_size(font_loader, text, max_width, max_height, min_size=10, max_siz
             return font
 
     return font
+
+
+def compose_photo_on_background(
+    photo,
+    background,
+    message="",
+    font_path=None,
+    side_margin_ratio=0.12,
+    top_margin_ratio=0.05,
+    bottom_margin_ratio=0.05,
+):
+    """Return a new RGB image: `photo` resized (aspect ratio preserved,
+    never cropped) and centered on a copy of `background`, with `message`
+    optionally drawn centered below it using the font at `font_path`."""
+    photo = ImageOps.exif_transpose(photo).convert("RGB")
+    canvas = background.convert("RGB").copy()
+    bg_w, bg_h = canvas.size
+
+    side_margin = round(bg_w * side_margin_ratio)
+    top_margin = round(bg_h * top_margin_ratio)
+    bottom_margin = round(bg_h * bottom_margin_ratio)
+
+    window_w = bg_w - 2 * side_margin
+    scale = window_w / photo.width
+    window_h = round(photo.height * scale)
+
+    resized_photo = photo.resize((window_w, window_h), Image.LANCZOS)
+    canvas.paste(resized_photo, (side_margin, top_margin))
+
+    if message and font_path and os.path.isfile(font_path):
+        text_zone_top = top_margin + window_h
+        text_zone_height = bg_h - bottom_margin - text_zone_top
+
+        if text_zone_height > 0:
+            font = fit_font_size(
+                lambda size: ImageFont.truetype(font_path, size),
+                message,
+                window_w,
+                text_zone_height,
+            )
+            draw = ImageDraw.Draw(canvas)
+            left, top, right, bottom = draw.textbbox((0, 0), message, font=font)
+            text_w = right - left
+            text_h = bottom - top
+            text_x = side_margin + (window_w - text_w) / 2 - left
+            text_y = text_zone_top + (text_zone_height - text_h) / 2 - top
+            draw.text((text_x, text_y), message, font=font, fill="white")
+
+    return canvas

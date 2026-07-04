@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 
-from photo_compositing import fit_font_size
+from photo_compositing import fit_font_size, compose_photo_on_background
 
 
 def _measure(text, font):
@@ -39,3 +39,40 @@ def test_fit_font_size_falls_back_to_min_size_when_nothing_fits():
     )
 
     assert font.size == 7
+
+
+def test_compose_resizes_and_centers_photo_on_background():
+    photo = Image.new("RGB", (400, 600), "red")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    result = compose_photo_on_background(photo, background)
+
+    assert result.size == (1000, 2000)
+    assert result.mode == "RGB"
+    # Center of the background sits inside the pasted photo window.
+    assert result.getpixel((result.width // 2, result.height // 2)) == (255, 0, 0)
+    # Top-left corner sits in the margin, outside the photo window.
+    assert result.getpixel((2, 2)) == (0, 0, 0)
+
+
+def test_compose_skips_message_when_font_path_is_none():
+    photo = Image.new("RGB", (400, 600), "red")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    result = compose_photo_on_background(photo, background, message="Anniversaire de Laura")
+
+    assert result.size == (1000, 2000)
+
+
+def test_compose_skips_message_when_font_file_is_missing():
+    photo = Image.new("RGB", (400, 600), "red")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    result = compose_photo_on_background(
+        photo,
+        background,
+        message="Anniversaire de Laura",
+        font_path="/nonexistent/font.ttf",
+    )
+
+    assert result.size == (1000, 2000)
