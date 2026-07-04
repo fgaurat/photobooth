@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
-  <!-- Noeud gauche -->
-  <path d="M100 50 L15 10 Q5 10 5 20 L5 80 Q5 90 15 90 Z" fill="#e74c3c" />
-  <!-- Noeud droite -->
-  <path d="M100 50 L185 10 Q195 10 195 20 L195 80 Q195 90 185 90 Z" fill="#e74c3c" />
-  <!-- Centre -->
-  <ellipse cx="100" cy="50" rx="12" ry="18" fill="#c0392b" />
-</svg>

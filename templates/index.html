@@ -651,10 +651,12 @@
         <div class="control-label">Filtres</div>
         <div class="control-row" id="filters"></div>
       </div>
+      {% if enable_face_props %}
       <div class="control-group">
         <div class="control-label">Accessoires</div>
         <div class="control-row" id="props"></div>
       </div>
+      {% endif %}
     </div>
     <div id="mode-selector">
       <button class="mode-btn active" data-mode="single">1 Photo</button>
@@ -688,9 +690,11 @@
 
   <div id="error"></div>
 
+  {% if enable_face_props %}
   <!-- MediaPipe Face Mesh -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  {% endif %}
 
   <script>
     // =============================================
@@ -711,6 +715,8 @@
     // =============================================
     // CONFIG
     // =============================================
+
+    const FACE_PROPS_ENABLED = {{ 'true' if enable_face_props else 'false' }};
 
     const FILTERS = [
       { name: 'Normal',  css: 'none' },
@@ -858,13 +864,15 @@
     // PRELOAD PROP IMAGES
     // =============================================
 
-    PROPS.forEach(p => {
-      if (p.src) {
-        const img = new Image();
-        img.src = p.src;
-        propImages[p.name] = img;
-      }
-    });
+    if (FACE_PROPS_ENABLED) {
+      PROPS.forEach(p => {
+        if (p.src) {
+          const img = new Image();
+          img.src = p.src;
+          propImages[p.name] = img;
+        }
+      });
+    }
 
     // =============================================
     // FILTRES UI
@@ -890,17 +898,19 @@
     // PROPS UI
     // =============================================
 
-    PROPS.forEach((p, i) => {
-      const btn = document.createElement('div');
-      btn.className = 'prop-btn' + (i === 0 ? ' active' : '');
-      if (p.src) {
-        btn.innerHTML = `<img src="${p.src}"><span class="item-name">${p.name}</span>`;
-      } else {
-        btn.innerHTML = `<span class="no-prop">--</span><span class="item-name">${p.name}</span>`;
-      }
-      btn.onclick = () => selectProp(i);
-      propsEl.appendChild(btn);
-    });
+    if (FACE_PROPS_ENABLED) {
+      PROPS.forEach((p, i) => {
+        const btn = document.createElement('div');
+        btn.className = 'prop-btn' + (i === 0 ? ' active' : '');
+        if (p.src) {
+          btn.innerHTML = `<img src="${p.src}"><span class="item-name">${p.name}</span>`;
+        } else {
+          btn.innerHTML = `<span class="no-prop">--</span><span class="item-name">${p.name}</span>`;
+        }
+        btn.onclick = () => selectProp(i);
+        propsEl.appendChild(btn);
+      });
+    }
 
     function selectProp(index) {
       currentProp = PROPS[index];
@@ -921,6 +931,7 @@
     const captureCtx = captureCanvas.getContext('2d');
 
     function initFaceMesh() {
+      if (!FACE_PROPS_ENABLED) return;
       faceMesh = new FaceMesh({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
       });
@@ -940,7 +951,7 @@
     }
 
     function startFaceDetectionLoop() {
-      if (faceDetectionRunning) return;
+      if (!FACE_PROPS_ENABLED || faceDetectionRunning) return;
       faceDetectionRunning = true;
 
       async function loop() {
@@ -1059,8 +1070,8 @@
       }
       if (e.code === 'ArrowRight' && !busy) { selectFilter((FILTERS.indexOf(currentFilter) + 1) % FILTERS.length); }
       if (e.code === 'ArrowLeft' && !busy) { selectFilter((FILTERS.indexOf(currentFilter) - 1 + FILTERS.length) % FILTERS.length); }
-      if (e.code === 'ArrowUp' && !busy) { e.preventDefault(); selectProp((PROPS.indexOf(currentProp) + 1) % PROPS.length); }
-      if (e.code === 'ArrowDown' && !busy) { e.preventDefault(); selectProp((PROPS.indexOf(currentProp) - 1 + PROPS.length) % PROPS.length); }
+      if (e.code === 'ArrowUp' && FACE_PROPS_ENABLED && !busy) { e.preventDefault(); selectProp((PROPS.indexOf(currentProp) + 1) % PROPS.length); }
+      if (e.code === 'ArrowDown' && FACE_PROPS_ENABLED && !busy) { e.preventDefault(); selectProp((PROPS.indexOf(currentProp) - 1 + PROPS.length) % PROPS.length); }
       if (e.code === 'Tab' && !busy) {
         e.preventDefault();
         currentMode = currentMode === 'single' ? 'strip' : 'single';

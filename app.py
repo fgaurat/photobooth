@@ -30,6 +30,7 @@ COUNTDOWN_STRIP = int(os.getenv("COUNTDOWN_STRIP", "5"))
 KEEP_ON_CAMERA = os.getenv("KEEP_ON_CAMERA", "true").lower() == "true"
 MIRROR_LIVEVIEW = os.getenv("MIRROR_LIVEVIEW", "true").lower() == "true"
 MIRROR_DISPLAY = os.getenv("MIRROR_DISPLAY", "false").lower() == "true"
+ENABLE_FACE_PROPS = os.getenv("ENABLE_FACE_PROPS", "false").lower() == "true"
 
 CDN_UPLOAD_URL = os.getenv("CDN_UPLOAD_URL", "")
 CDN_PUBLIC_URL = os.getenv("CDN_PUBLIC_URL", "")
@@ -260,7 +261,13 @@ def resume_preview():
 
 @app.route("/")
 def index():
-    return render_template("index.html", countdown_strip=COUNTDOWN_STRIP, mirror_liveview=MIRROR_LIVEVIEW, mirror_display=MIRROR_DISPLAY)
+    return render_template(
+        "index.html",
+        countdown_strip=COUNTDOWN_STRIP,
+        mirror_liveview=MIRROR_LIVEVIEW,
+        mirror_display=MIRROR_DISPLAY,
+        enable_face_props=ENABLE_FACE_PROPS,
+    )
 
 
 @app.route("/preview-thumb")
