@@ -76,3 +76,20 @@ def test_compose_skips_message_when_font_file_is_missing():
     )
 
     assert result.size == (1000, 2000)
+
+
+def test_compose_skips_message_when_font_file_is_invalid(tmp_path):
+    photo = Image.new("RGB", (400, 600), "red")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    bad_font_path = tmp_path / "not_a_font.ttf"
+    bad_font_path.write_bytes(b"this is not a valid font file")
+
+    result = compose_photo_on_background(
+        photo,
+        background,
+        message="Anniversaire de Laura",
+        font_path=str(bad_font_path),
+    )
+
+    assert result.size == (1000, 2000)
