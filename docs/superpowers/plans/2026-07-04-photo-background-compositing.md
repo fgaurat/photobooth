@@ -17,7 +17,7 @@
 - The photo is resized preserving its aspect ratio and is never cropped.
 - The message is drawn as a single line, white, auto-shrunk to fit the available width/height; if `PHOTO_MESSAGE` is empty or `PHOTO_MESSAGE_FONT` is empty/missing on disk, no text is drawn — no error.
 - A missing background file, missing font, or any unexpected error during compositing must fall back to saving the raw uploaded photo (today's behavior) and log a warning — capturing a photo must never fail because of this feature.
-- Test placeholder asset: `static/backgrounds/black.png`, solid black, portrait, **3744×5616** px.
+- Test placeholder asset: `static/backgrounds/black.png`, solid black, landscape, **5616×3744** px (single-photo mode is landscape — corrected after an earlier wrong inference from an accidentally-sent portrait sample photo; the real Canon raw dimensions are landscape and that's the intended orientation).
 
 ---
 
@@ -339,9 +339,9 @@ git commit -m "Add compose_photo_on_background for the single-photo frame featur
 Run:
 ```bash
 mkdir -p static/backgrounds
-uv run python -c "from PIL import Image; Image.new('RGB', (3744, 5616), 'black').save('static/backgrounds/black.png')"
+uv run python -c "from PIL import Image; Image.new('RGB', (5616, 3744), 'black').save('static/backgrounds/black.png')"
 ```
-Expected: `static/backgrounds/black.png` exists; `file static/backgrounds/black.png` reports `PNG image data, 3744 x 5616`.
+Expected: `static/backgrounds/black.png` exists; `file static/backgrounds/black.png` reports `PNG image data, 5616 x 3744`.
 
 - [ ] **Step 2: Add the new config variables**
 
@@ -418,7 +418,7 @@ Then run, from the repo root:
 curl -s -F "file=@photos/photo_20260704_162953_360619.jpg" -F "filename=bg_test.jpg" -F "apply_background=1" http://localhost:8080/upload-filtered
 uv run python -c "from PIL import Image; print(Image.open('photos/bg_test.jpg').size)"
 ```
-Expected: the curl call returns `{"filename":"bg_test.jpg"}`, and the printed size is `(3744, 5616)` (the background's size, proving the photo was composited onto it rather than saved raw).
+Expected: the curl call returns `{"filename":"bg_test.jpg"}`, and the printed size is `(5616, 3744)` (the background's size, proving the photo was composited onto it rather than saved raw).
 
 - [ ] **Step 6: Commit**
 
