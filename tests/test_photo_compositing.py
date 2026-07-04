@@ -60,6 +60,20 @@ def test_compose_uses_the_same_margin_ratio_on_sides_as_on_top_by_default():
     assert result.getpixel((100, 500)) == (255, 0, 0)
 
 
+def test_compose_upscales_a_background_smaller_than_the_photo():
+    photo = Image.new("RGB", (2000, 3000), "red")
+    background = Image.new("RGB", (500, 800), "black")
+
+    result = compose_photo_on_background(photo, background)
+
+    # required_canvas_w = 2000 / (1 - 2*0.05) = 2222.22 -> 2222;
+    # background (500x800, aspect 0.625) scaled up by 2222/500=4.444 ->
+    # (2222, 3556). The photo then fits its window at scale=1.0 (native
+    # resolution, not downscaled) rather than being squeezed into a
+    # canvas smaller than itself.
+    assert result.size == (2222, 3556)
+
+
 def test_compose_resizes_and_centers_photo_on_background():
     photo = Image.new("RGB", (400, 600), "red")
     background = Image.new("RGB", (1000, 2000), "black")

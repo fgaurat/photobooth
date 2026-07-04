@@ -41,6 +41,15 @@ def compose_photo_on_background(
     like "white" or a hex string)."""
     photo = ImageOps.exif_transpose(photo).convert("RGB")
     canvas = background.convert("RGB").copy()
+
+    required_canvas_w = photo.width / (1 - 2 * side_margin_ratio)
+    if canvas.width < required_canvas_w:
+        scale_up = required_canvas_w / canvas.width
+        canvas = canvas.resize(
+            (round(canvas.width * scale_up), round(canvas.height * scale_up)),
+            Image.LANCZOS,
+        )
+
     bg_w, bg_h = canvas.size
 
     side_margin = round(bg_w * side_margin_ratio)
