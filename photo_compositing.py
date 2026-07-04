@@ -29,13 +29,16 @@ def compose_photo_on_background(
     background,
     message="",
     font_path=None,
+    color="white",
     side_margin_ratio=0.12,
     top_margin_ratio=0.05,
     bottom_margin_ratio=0.05,
 ):
     """Return a new RGB image: `photo` resized (aspect ratio preserved,
     never cropped) and centered on a copy of `background`, with `message`
-    optionally drawn centered below it using the font at `font_path`."""
+    optionally drawn centered below it using the font at `font_path`, in
+    `color` (any value PIL's ImageDraw.text `fill` accepts, e.g. a name
+    like "white" or a hex string)."""
     photo = ImageOps.exif_transpose(photo).convert("RGB")
     canvas = background.convert("RGB").copy()
     bg_w, bg_h = canvas.size
@@ -73,6 +76,6 @@ def compose_photo_on_background(
                 text_h = bottom - top
                 text_x = side_margin + (window_w - text_w) / 2 - left
                 text_y = text_zone_top + (text_zone_height - text_h) / 2 - top
-                draw.text((text_x, text_y), message, font=font, fill="white")
+                draw.text((text_x, text_y), message, font=font, fill=color)
 
     return canvas

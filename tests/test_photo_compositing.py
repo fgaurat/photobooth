@@ -1,6 +1,12 @@
+from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFont
 
 from photo_compositing import fit_font_size, compose_photo_on_background
+
+SAMARKAN_FONT_PATH = str(
+    Path(__file__).parent.parent / "static" / "fonts" / "samarkan" / "SAMAN___.TTF"
+)
 
 
 def _measure(text, font):
@@ -93,3 +99,44 @@ def test_compose_skips_message_when_font_file_is_invalid(tmp_path):
     )
 
     assert result.size == (1000, 2000)
+
+
+def test_compose_draws_message_in_the_configured_color():
+    photo = Image.new("RGB", (400, 600), "black")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    result = compose_photo_on_background(
+        photo,
+        background,
+        message="Test",
+        font_path=SAMARKAN_FONT_PATH,
+        color="red",
+    )
+
+    # Photo and background are both pure black, so any non-black pixel in
+    # the text zone must come from the rendered message itself.
+    text_zone = result.crop((120, 1240, 880, 1900))
+    (min_r, max_r), (min_g, max_g), (min_b, max_b) = text_zone.getextrema()
+
+    assert max_r > 150
+    assert max_g < 80
+    assert max_b < 80
+
+
+def test_compose_defaults_message_color_to_white():
+    photo = Image.new("RGB", (400, 600), "black")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    result = compose_photo_on_background(
+        photo,
+        background,
+        message="Test",
+        font_path=SAMARKAN_FONT_PATH,
+    )
+
+    text_zone = result.crop((120, 1240, 880, 1900))
+    (min_r, max_r), (min_g, max_g), (min_b, max_b) = text_zone.getextrema()
+
+    assert max_r > 150
+    assert max_g > 150
+    assert max_b > 150

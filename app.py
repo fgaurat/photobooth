@@ -36,6 +36,7 @@ FONTS_DIR = os.path.join(os.path.dirname(__file__), "static", "fonts")
 PHOTO_BACKGROUND = os.getenv("PHOTO_BACKGROUND", "black.png")
 PHOTO_MESSAGE = os.getenv("PHOTO_MESSAGE", "")
 PHOTO_MESSAGE_FONT = os.getenv("PHOTO_MESSAGE_FONT", "")
+PHOTO_MESSAGE_COLOR = os.getenv("PHOTO_MESSAGE_COLOR", "white")
 
 CDN_UPLOAD_URL = os.getenv("CDN_UPLOAD_URL", "")
 CDN_PUBLIC_URL = os.getenv("CDN_PUBLIC_URL", "")
@@ -475,7 +476,11 @@ def apply_photo_background(filepath):
     try:
         with PILImage.open(filepath) as photo, PILImage.open(background_path) as background:
             composed = compose_photo_on_background(
-                photo, background, message=PHOTO_MESSAGE, font_path=font_path
+                photo,
+                background,
+                message=PHOTO_MESSAGE,
+                font_path=font_path,
+                color=PHOTO_MESSAGE_COLOR,
             )
             composed.save(filepath, "JPEG", quality=92)
     except Exception as e:
