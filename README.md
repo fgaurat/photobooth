@@ -20,14 +20,15 @@ Photobooth de mariage / événement avec détection de visage, filtres, accessoi
 - macOS ou Linux
 - Python ≥ 3.8, [`uv`](https://docs.astral.sh/uv/) pour la gestion des dépendances
 - Pour le mode Canon : `gphoto2` (CLI) installé sur le système (`brew install gphoto2`)
-- Pour le mode webcam : rien de plus (OpenCV vient avec les deps)
+- Pour le mode webcam : OpenCV, à installer via l'extra `webcam` (voir Installation) — les wheels ne sont pas disponibles pour toutes les plateformes/versions d'OS (ex. macOS ancien sur Intel), d'où l'installation séparée
 
 ## Installation
 
 ```bash
 git clone <repo>
 cd photobooth
-uv sync
+uv sync                    # mode Canon uniquement
+uv sync --extra webcam     # ajoute OpenCV si tu comptes utiliser le mode webcam
 cp .env.example .env  # à créer si absent, cf. section Configuration
 ```
 
@@ -149,7 +150,7 @@ Gérées via `uv` (voir `pyproject.toml`) :
 - `pillow` — composition planche, thumbnails
 - `qrcode` — génération QR
 - `requests` — upload CDN
-- `opencv-python-headless` — webcam
+- `opencv-python-headless` — webcam (extra optionnel `webcam`, `uv sync --extra webcam`)
 - `python-dotenv` — config
 
 Externe : `gphoto2` (CLI système), MediaPipe (chargé depuis CDN côté client).

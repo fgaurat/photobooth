@@ -8,7 +8,6 @@ import threading
 import time
 from datetime import datetime
 
-import cv2
 import qrcode
 import requests
 from dotenv import load_dotenv
@@ -159,6 +158,8 @@ _webcam_lock = threading.Lock()
 
 
 def _webcam_open():
+    import cv2
+
     global _webcam
     with _webcam_lock:
         if _webcam is not None and _webcam.isOpened():
@@ -178,6 +179,8 @@ def _webcam_close():
 
 
 def _webcam_preview_generate():
+    import cv2
+
     _webcam_open()
     while True:
         with _webcam_lock:
@@ -200,6 +203,8 @@ def _webcam_prepare():
 
 
 def _webcam_capture():
+    import cv2
+
     _webcam_open()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     filename = f"photo_{timestamp}.jpg"

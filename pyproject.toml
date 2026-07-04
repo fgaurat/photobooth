@@ -6,11 +6,15 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
     "flask>=3.0.3",
-    "opencv-python-headless>=4.13.0.92",
     "pillow>=10.4.0",
     "python-dotenv>=1.0.1",
     "qrcode>=7.4.2",
     "requests>=2.32.4",
+]
+
+[project.optional-dependencies]
+webcam = [
+    "opencv-python-headless>=4.13.0.92",
 ]
 
 [tool.pytest.ini_options]
