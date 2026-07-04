@@ -30,6 +30,7 @@ def compose_photo_on_background(
     message="",
     font_path=None,
     color="white",
+    font_size=None,
     side_margin_ratio=0.05,
     top_margin_ratio=0.05,
     bottom_margin_ratio=0.05,
@@ -38,7 +39,10 @@ def compose_photo_on_background(
     never cropped) and centered on a copy of `background`, with `message`
     optionally drawn centered below it using the font at `font_path`, in
     `color` (any value PIL's ImageDraw.text `fill` accepts, e.g. a name
-    like "white" or a hex string)."""
+    like "white" or a hex string). By default the font size auto-shrinks
+    to fit the available space; pass `font_size` to use that exact size
+    instead (the caller is responsible for it fitting — it may overflow
+    the text zone if the message is too long for the chosen size)."""
     photo = ImageOps.exif_transpose(photo).convert("RGB")
     canvas = background.convert("RGB").copy()
 
@@ -69,12 +73,15 @@ def compose_photo_on_background(
 
         if text_zone_height > 0:
             try:
-                font = fit_font_size(
-                    lambda size: ImageFont.truetype(font_path, size),
-                    message,
-                    window_w,
-                    text_zone_height,
-                )
+                if font_size is not None:
+                    font = ImageFont.truetype(font_path, font_size)
+                else:
+                    font = fit_font_size(
+                        lambda size: ImageFont.truetype(font_path, size),
+                        message,
+                        window_w,
+                        text_zone_height,
+                    )
             except OSError:
                 font = None
 

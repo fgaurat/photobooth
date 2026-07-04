@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 from photo_compositing import fit_font_size, compose_photo_on_background
 
@@ -170,3 +170,45 @@ def test_compose_defaults_message_color_to_white():
     assert max_r > 150
     assert max_g > 150
     assert max_b > 150
+
+
+def _rendered_text_bbox_area(image, crop_box):
+    text_zone = image.crop(crop_box)
+    diff = ImageChops.difference(text_zone, Image.new("RGB", text_zone.size, (0, 0, 0)))
+    bbox = diff.getbbox()
+    assert bbox is not None, "expected some rendered (non-black) text pixels"
+    left, top, right, bottom = bbox
+    return (right - left) * (bottom - top)
+
+
+def test_compose_uses_a_fixed_font_size_when_given_instead_of_auto_fit():
+    photo = Image.new("RGB", (400, 600), "black")
+    background = Image.new("RGB", (1000, 2000), "black")
+    crop_box = (0, 1450, 1000, 2000)
+
+    small = compose_photo_on_background(
+        photo, background, message="Test", font_path=SAMARKAN_FONT_PATH, font_size=20
+    )
+    large = compose_photo_on_background(
+        photo, background, message="Test", font_path=SAMARKAN_FONT_PATH, font_size=80
+    )
+
+    assert _rendered_text_bbox_area(large, crop_box) > _rendered_text_bbox_area(small, crop_box)
+
+
+def test_compose_ignores_fixed_font_size_when_font_file_is_invalid(tmp_path):
+    photo = Image.new("RGB", (400, 600), "red")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    bad_font_path = tmp_path / "not_a_font.ttf"
+    bad_font_path.write_bytes(b"this is not a valid font file")
+
+    result = compose_photo_on_background(
+        photo,
+        background,
+        message="Test",
+        font_path=str(bad_font_path),
+        font_size=40,
+    )
+
+    assert result.size == (1000, 2000)
