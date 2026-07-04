@@ -30,7 +30,7 @@ def compose_photo_on_background(
     message="",
     font_path=None,
     color="white",
-    side_margin_ratio=0.12,
+    side_margin_ratio=0.05,
     top_margin_ratio=0.05,
     bottom_margin_ratio=0.05,
 ):

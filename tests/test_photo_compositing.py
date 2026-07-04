@@ -47,6 +47,19 @@ def test_fit_font_size_falls_back_to_min_size_when_nothing_fits():
     assert font.size == 7
 
 
+def test_compose_uses_the_same_margin_ratio_on_sides_as_on_top_by_default():
+    photo = Image.new("RGB", (400, 600), "red")
+    background = Image.new("RGB", (1000, 2000), "black")
+
+    result = compose_photo_on_background(photo, background)
+
+    # Default side margin now matches the 5% top margin (was 12%): at
+    # x=100 (past the new 5%*1000=50px margin, still short of the old
+    # 12%*1000=120px margin) and a y within the photo's vertical span,
+    # this pixel is only red if the side margin actually shrank to 5%.
+    assert result.getpixel((100, 500)) == (255, 0, 0)
+
+
 def test_compose_resizes_and_centers_photo_on_background():
     photo = Image.new("RGB", (400, 600), "red")
     background = Image.new("RGB", (1000, 2000), "black")
@@ -115,7 +128,10 @@ def test_compose_draws_message_in_the_configured_color():
 
     # Photo and background are both pure black, so any non-black pixel in
     # the text zone must come from the rendered message itself.
-    text_zone = result.crop((120, 1240, 880, 1900))
+    # side_margin_ratio=0.05, top_margin_ratio=0.05 -> side_margin=50,
+    # top_margin=100, window_w=900, scale=2.25, window_h=1350,
+    # text_zone_top=1450, bottom_margin=100 -> text_zone_bottom=1900.
+    text_zone = result.crop((50, 1450, 950, 1900))
     (min_r, max_r), (min_g, max_g), (min_b, max_b) = text_zone.getextrema()
 
     assert max_r > 150
@@ -134,7 +150,7 @@ def test_compose_defaults_message_color_to_white():
         font_path=SAMARKAN_FONT_PATH,
     )
 
-    text_zone = result.crop((120, 1240, 880, 1900))
+    text_zone = result.crop((50, 1450, 950, 1900))
     (min_r, max_r), (min_g, max_g), (min_b, max_b) = text_zone.getextrema()
 
     assert max_r > 150
