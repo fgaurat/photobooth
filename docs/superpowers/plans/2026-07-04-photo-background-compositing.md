@@ -301,18 +301,18 @@ git commit -m "Add compose_photo_on_background for the single-photo frame featur
 - Modify: `app.py:33` (config block)
 - Modify: `app.py:454-463` (`/upload-filtered` route)
 - Create: `static/backgrounds/black.png` (via a one-off command, not a permanent script)
-- Create: `static/fonts/.gitkeep`
+
+**Note:** `static/fonts/samarkan/SAMAN___.TTF` already exists in the working tree (provided by the project owner) — no need to create the `static/fonts/` folder or a placeholder file for it.
 
 **Interfaces:**
 - Consumes: `compose_photo_on_background(photo, background, message="", font_path=None, ...)` from Task 2.
 - Produces: `apply_photo_background(filepath: str) -> None` in `app.py` — opens the file at `filepath` in place, composites it against the configured background/message/font if available, and overwrites `filepath` with the result. Never raises — logs and returns on any failure.
 
-- [ ] **Step 1: Create the folders and the test background asset**
+- [ ] **Step 1: Create the backgrounds folder and the test background asset**
 
 Run:
 ```bash
-mkdir -p static/backgrounds static/fonts
-touch static/fonts/.gitkeep
+mkdir -p static/backgrounds
 uv run python -c "from PIL import Image; Image.new('RGB', (3744, 5616), 'black').save('static/backgrounds/black.png')"
 ```
 Expected: `static/backgrounds/black.png` exists; `file static/backgrounds/black.png` reports `PNG image data, 3744 x 5616`.
@@ -397,9 +397,11 @@ Expected: the curl call returns `{"filename":"bg_test.jpg"}`, and the printed si
 - [ ] **Step 6: Commit**
 
 ```bash
-git add app.py static/backgrounds/black.png static/fonts/.gitkeep
+git add app.py static/backgrounds/black.png static/fonts/samarkan/
 git commit -m "Composite single-photo uploads onto a configurable background"
 ```
+
+(`static/fonts/samarkan/` was sitting untracked in the working directory — this is the first task that makes use of `FONTS_DIR`, so it's committed here.)
 
 ---
 
@@ -518,8 +520,10 @@ PHOTO_BACKGROUND=black.png
 PHOTO_MESSAGE=Anniversaire de Laura
 
 # Police du message (fichier .ttf/.otf dans static/fonts/, vide = pas de message dessiné)
-PHOTO_MESSAGE_FONT=
+PHOTO_MESSAGE_FONT=samarkan/SAMAN___.TTF
 ```
+
+`static/fonts/samarkan/SAMAN___.TTF` already exists in the working tree (provided by the project owner, shareware license, freely distributable) — this step just points the config at it.
 
 - [ ] **Step 2: Run the full test suite**
 
@@ -529,7 +533,7 @@ Expected: all tests pass (6 from Tasks 1-2, no regressions).
 - [ ] **Step 3: End-to-end manual check with a real capture**
 
 With `CAMERA_MODE=webcam uv run python app.py` running:
-1. Capture a single photo. Confirm the result photo shows your webcam frame resized and centered on the black background, with no message text (since `PHOTO_MESSAGE_FONT` is still empty — no font file provided yet).
+1. Capture a single photo. Confirm the result photo shows your webcam frame resized and centered on the black background, with "Anniversaire de Laura" rendered in the Samarkan font, white, centered below the photo.
 2. Rename/point `PHOTO_BACKGROUND` to a nonexistent file temporarily (e.g. `PHOTO_BACKGROUND=missing.png`), restart the server, capture again, and confirm the capture still succeeds (falls back to the raw photo, check the server console for the `⚠️  Fond introuvable` warning). Revert `PHOTO_BACKGROUND` to `black.png` afterwards.
 
 - [ ] **Step 4: Commit**
