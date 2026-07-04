@@ -12,6 +12,7 @@ import cv2
 import qrcode
 import requests
 from dotenv import load_dotenv
+from photo_compositing import compose_photo_on_background
 from flask import Flask, render_template, jsonify, send_from_directory, send_file, Response, request
 
 load_dotenv()
@@ -31,6 +32,11 @@ KEEP_ON_CAMERA = os.getenv("KEEP_ON_CAMERA", "true").lower() == "true"
 MIRROR_LIVEVIEW = os.getenv("MIRROR_LIVEVIEW", "true").lower() == "true"
 MIRROR_DISPLAY = os.getenv("MIRROR_DISPLAY", "false").lower() == "true"
 ENABLE_FACE_PROPS = os.getenv("ENABLE_FACE_PROPS", "false").lower() == "true"
+BACKGROUNDS_DIR = os.path.join(os.path.dirname(__file__), "static", "backgrounds")
+FONTS_DIR = os.path.join(os.path.dirname(__file__), "static", "fonts")
+PHOTO_BACKGROUND = os.getenv("PHOTO_BACKGROUND", "black.png")
+PHOTO_MESSAGE = os.getenv("PHOTO_MESSAGE", "")
+PHOTO_MESSAGE_FONT = os.getenv("PHOTO_MESSAGE_FONT", "")
 
 CDN_UPLOAD_URL = os.getenv("CDN_UPLOAD_URL", "")
 CDN_PUBLIC_URL = os.getenv("CDN_PUBLIC_URL", "")
@@ -451,6 +457,26 @@ def qr_code(filename):
     return send_file(buf, mimetype="image/png")
 
 
+def apply_photo_background(filepath):
+    background_path = os.path.join(BACKGROUNDS_DIR, PHOTO_BACKGROUND)
+    if not os.path.isfile(background_path):
+        print(f"⚠️  Fond introuvable : {background_path}")
+        return
+
+    from PIL import Image as PILImage
+
+    font_path = os.path.join(FONTS_DIR, PHOTO_MESSAGE_FONT) if PHOTO_MESSAGE_FONT else None
+
+    try:
+        with PILImage.open(filepath) as photo, PILImage.open(background_path) as background:
+            composed = compose_photo_on_background(
+                photo, background, message=PHOTO_MESSAGE, font_path=font_path
+            )
+            composed.save(filepath, "JPEG", quality=92)
+    except Exception as e:
+        print(f"⚠️  Composition fond échouée : {e}")
+
+
 @app.route("/upload-filtered", methods=["POST"])
 def upload_filtered():
     if "file" not in request.files:
@@ -459,6 +485,10 @@ def upload_filtered():
     filename = request.form.get("filename", f"filtered_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
     filepath = os.path.join(PHOTOS_DIR, filename)
     f.save(filepath)
+
+    if request.form.get("apply_background") == "1":
+        apply_photo_background(filepath)
+
     upload_to_cdn_async(filepath, filename)
     return jsonify({"filename": filename})
 
