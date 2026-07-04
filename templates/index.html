@@ -1162,7 +1162,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur inconnue');
 
-        const finalFilename = await composeFinalPhoto(data.filename, filterCss, prop);
+        const finalFilename = await composeFinalPhoto(data.filename, filterCss, prop, true);
         processingOverlay.style.display = 'none';
         photoEl.src = `/photos/preview/${finalFilename}`;
         photoEl.style.filter = 'none';
@@ -1219,7 +1219,7 @@
         stripProgress.textContent = 'Traitement...';
         const finalFiles = [];
         for (const fname of rawFilenames) {
-          const finalFile = await composeFinalPhoto(fname, filterCss, prop);
+          const finalFile = await composeFinalPhoto(fname, filterCss, prop, false);
           finalFiles.push(finalFile);
 
           const thumb = document.createElement('img');
@@ -1258,8 +1258,8 @@
       setTimeout(() => { errorEl.style.display = 'none'; }, 4000);
     }
 
-    async function composeFinalPhoto(originalFilename, filterCss, prop) {
-      const needsProcessing = filterCss !== 'none' || prop.src;
+    async function composeFinalPhoto(originalFilename, filterCss, prop, applyBackground) {
+      const needsProcessing = filterCss !== 'none' || prop.src || applyBackground;
       if (!needsProcessing) return originalFilename;
 
       const img = new Image();
@@ -1330,6 +1330,7 @@
       const form = new FormData();
       form.append('file', blob, finalName);
       form.append('filename', finalName);
+      form.append('apply_background', applyBackground ? '1' : '0');
       await fetch('/upload-filtered', { method: 'POST', body: form });
       return finalName;
     }
