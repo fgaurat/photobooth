@@ -67,11 +67,13 @@ def _measure(text, font):
 def test_fit_font_size_fits_within_a_narrow_box():
     font_loader = lambda size: ImageFont.load_default(size=size)
 
-    font = fit_font_size(font_loader, "Anniversaire de Laura", max_width=100, max_height=40)
+    font = fit_font_size(font_loader, "Anniversaire de Laura", max_width=300, max_height=60)
 
     width, height = _measure("Anniversaire de Laura", font)
-    assert width <= 100
-    assert height <= 40
+    assert width <= 300
+    assert height <= 60
+    # Confirms real shrinking happened, distinct from the min-size-floor test below.
+    assert font.size > 10
 
 
 def test_fit_font_size_grows_for_a_generous_box():
