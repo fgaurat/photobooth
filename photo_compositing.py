@@ -69,9 +69,14 @@ def compose_photo_on_background(
 
     if message and font_path and os.path.isfile(font_path):
         text_zone_top = top_margin + window_h
-        text_zone_height = bg_h - bottom_margin - text_zone_top
+        # Full remaining space down to the true bottom edge of the image —
+        # the text is centered within *this*, not just the sizing budget
+        # below, so it sits centered between the photo and the image edge
+        # rather than looking shifted up by a hidden bottom_margin gap.
+        available_height = bg_h - text_zone_top
+        max_text_height = available_height - bottom_margin
 
-        if text_zone_height > 0:
+        if max_text_height > 0:
             try:
                 if font_size is not None:
                     font = ImageFont.truetype(font_path, font_size)
@@ -80,7 +85,7 @@ def compose_photo_on_background(
                         lambda size: ImageFont.truetype(font_path, size),
                         message,
                         window_w,
-                        text_zone_height,
+                        max_text_height,
                     )
             except OSError:
                 font = None
@@ -93,7 +98,7 @@ def compose_photo_on_background(
                 text_w = right - left
                 text_h = bottom - top
                 text_x = side_margin + (window_w - text_w) / 2 - left
-                text_y = text_zone_top + (text_zone_height - text_h) / 2 - top
+                text_y = text_zone_top + (available_height - text_h) / 2 - top
                 draw.text(
                     (text_x, text_y), message, font=font, fill=color, align="center"
                 )
