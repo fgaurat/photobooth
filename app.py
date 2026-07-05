@@ -39,6 +39,7 @@ PHOTO_MESSAGE_FONT = os.getenv("PHOTO_MESSAGE_FONT", "")
 PHOTO_MESSAGE_COLOR = os.getenv("PHOTO_MESSAGE_COLOR", "white")
 _photo_message_size = os.getenv("PHOTO_MESSAGE_SIZE", "")
 PHOTO_MESSAGE_SIZE = int(_photo_message_size) if _photo_message_size else None
+PHOTO_MESSAGE_ZONE = float(os.getenv("PHOTO_MESSAGE_ZONE", "0.20"))
 
 CDN_UPLOAD_URL = os.getenv("CDN_UPLOAD_URL", "")
 CDN_PUBLIC_URL = os.getenv("CDN_PUBLIC_URL", "")
@@ -484,6 +485,7 @@ def apply_photo_background(filepath):
                 font_path=font_path,
                 color=PHOTO_MESSAGE_COLOR,
                 font_size=PHOTO_MESSAGE_SIZE,
+                text_zone_ratio=PHOTO_MESSAGE_ZONE,
             )
             composed.save(filepath, "JPEG", quality=92)
     except Exception as e:

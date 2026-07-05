@@ -253,13 +253,12 @@ def test_compose_centers_message_over_the_full_space_below_the_photo():
         photo, background, message="Hi", font_path=SAMARKAN_FONT_PATH, font_size=40
     )
 
-    # side_margin_ratio=top_margin_ratio=0.05 -> top_margin=100,
-    # window_h=1350 -> text_zone_top=1450. The message must be centered
-    # over the FULL remaining height down to the true bottom edge of the
-    # image (bg_h=2000), not just within a sub-region that stops short at
-    # a hidden bottom-margin boundary (which would leave more empty space
-    # below the text than above it).
-    full_zone = result.crop((0, 1450, 1000, 2000))
+    # top_margin=100, bottom_margin=100, text_zone=20%*2000=400,
+    # photo_zone_h = 2000-100-100-400 = 1400 -> text_zone_top = 1500.
+    # The message must be centered over the FULL remaining height down to
+    # the true bottom edge of the image, not just within a sub-region that
+    # stops short at a hidden bottom-margin boundary.
+    full_zone = result.crop((0, 1500, 1000, 2000))
     diff = ImageChops.difference(full_zone, Image.new("RGB", full_zone.size, (0, 0, 0)))
     bbox = diff.getbbox()
     assert bbox is not None
