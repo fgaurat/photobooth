@@ -1,0 +1,13 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - img
+  - generic:
+    - img
+  - generic [ref=e2]: Bollywood Photobooth
+  - link "Galerie" [ref=e3] [cursor=pointer]:
+    - /url: /gallery
+  - generic [ref=e5]:
+    - img [ref=e6]
+    - generic:
+      - generic: "3"
+  - generic [ref=e47]: Pose 1 / 4

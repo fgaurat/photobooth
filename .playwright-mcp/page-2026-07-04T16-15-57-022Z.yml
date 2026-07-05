@@ -1,0 +1,41 @@
+- generic [ref=f1e1]:
+  - generic:
+    - img
+  - generic:
+    - img
+  - generic [ref=f1e2]: Bollywood Photobooth
+  - link "Galerie" [ref=f1e3] [cursor=pointer]:
+    - /url: /gallery
+  - generic [ref=f1e4]:
+    - img [ref=f1e6]
+    - generic [ref=f1e8]:
+      - generic [ref=f1e9]: Filtres
+      - generic [ref=f1e10]:
+        - generic [ref=f1e11] [cursor=pointer]:
+          - img [ref=f1e12]
+          - generic [ref=f1e13]: Normal
+        - generic [ref=f1e14] [cursor=pointer]:
+          - img [ref=f1e15]
+          - generic [ref=f1e16]: N&B
+        - generic [ref=f1e17] [cursor=pointer]:
+          - img [ref=f1e18]
+          - generic [ref=f1e19]: Sepia
+        - generic [ref=f1e20] [cursor=pointer]:
+          - img [ref=f1e21]
+          - generic [ref=f1e22]: Vintage
+        - generic [ref=f1e23] [cursor=pointer]:
+          - img [ref=f1e24]
+          - generic [ref=f1e25]: Punch
+        - generic [ref=f1e26] [cursor=pointer]:
+          - img [ref=f1e27]
+          - generic [ref=f1e28]: Cool
+        - generic [ref=f1e29] [cursor=pointer]:
+          - img [ref=f1e30]
+          - generic [ref=f1e31]: Warm
+        - generic [ref=f1e32] [cursor=pointer]:
+          - img [ref=f1e33]
+          - generic [ref=f1e34]: Drama
+    - generic [ref=f1e35]:
+      - button "1 Photo" [active] [ref=f1e36] [cursor=pointer]
+      - button "Planche x4" [ref=f1e37] [cursor=pointer]
+    - button "Action !" [ref=f1e38] [cursor=pointer]

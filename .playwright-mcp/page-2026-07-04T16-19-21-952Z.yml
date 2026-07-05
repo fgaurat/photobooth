@@ -1,0 +1,17 @@
+- generic [active] [ref=f3e1]:
+  - generic:
+    - img
+  - generic:
+    - img
+  - generic [ref=f3e2]: Bollywood Photobooth
+  - link "Galerie" [ref=f3e3] [cursor=pointer]:
+    - /url: /gallery
+  - generic [ref=f3e39]:
+    - img [ref=f3e40]
+    - generic [ref=f3e41]:
+      - img [ref=f3e42]
+      - generic [ref=f3e43]:
+        - text: Scanne pour
+        - text: telecharger ta photo
+      - generic [ref=f3e44]: En ligne
+      - button "OK" [ref=f3e46] [cursor=pointer]
