@@ -34,6 +34,7 @@ def compose_photo_on_background(
     side_margin_ratio=0.05,
     top_margin_ratio=0.05,
     bottom_margin_ratio=0.05,
+    text_zone_ratio=0.20,
 ):
     """Return a new RGB image: `photo` resized (aspect ratio preserved,
     never cropped) and centered on a copy of `background`, with `message`
@@ -42,9 +43,14 @@ def compose_photo_on_background(
     like "white" or a hex string). By default the font size auto-shrinks
     to fit the available space; pass `font_size` to use that exact size
     instead (the caller is responsible for it fitting — it may overflow
-    the text zone if the message is too long for the chosen size)."""
+    the text zone if the message is too long for the chosen size).
+    `text_zone_ratio` is the fraction of background height reserved for
+    the message (only when a message is drawn); the photo is shrunk to
+    fit the remaining zone above."""
     photo = ImageOps.exif_transpose(photo).convert("RGB")
     canvas = background.convert("RGB").copy()
+
+    has_message = bool(message and font_path and os.path.isfile(font_path))
 
     required_canvas_w = photo.width / (1 - 2 * side_margin_ratio)
     if canvas.width < required_canvas_w:
@@ -60,15 +66,28 @@ def compose_photo_on_background(
     top_margin = round(bg_h * top_margin_ratio)
     bottom_margin = round(bg_h * bottom_margin_ratio)
 
-    window_w = bg_w - 2 * side_margin
-    scale = window_w / photo.width
-    window_h = round(photo.height * scale)
+    text_zone_h = round(bg_h * text_zone_ratio) if has_message else 0
+
+    photo_zone_w = bg_w - 2 * side_margin
+    photo_zone_h = bg_h - top_margin - text_zone_h - bottom_margin
+
+    photo_ratio = photo.width / photo.height
+    zone_ratio = photo_zone_w / photo_zone_h
+
+    if photo_ratio >= zone_ratio:
+        window_w = photo_zone_w
+        window_h = round(photo.height * window_w / photo.width)
+    else:
+        window_h = photo_zone_h
+        window_w = round(photo.width * window_h / photo.height)
 
     resized_photo = photo.resize((window_w, window_h), Image.LANCZOS)
-    canvas.paste(resized_photo, (side_margin, top_margin))
+    photo_x = (bg_w - window_w) // 2
+    photo_y = top_margin + (photo_zone_h - window_h) // 2
+    canvas.paste(resized_photo, (photo_x, photo_y))
 
-    if message and font_path and os.path.isfile(font_path):
-        text_zone_top = top_margin + window_h
+    if has_message:
+        text_zone_top = top_margin + photo_zone_h
         # Full remaining space down to the true bottom edge of the image —
         # the text is centered within *this*, not just the sizing budget
         # below, so it sits centered between the photo and the image edge
@@ -84,7 +103,7 @@ def compose_photo_on_background(
                     font = fit_font_size(
                         lambda size: ImageFont.truetype(font_path, size),
                         message,
-                        window_w,
+                        photo_zone_w,
                         max_text_height,
                     )
             except OSError:
@@ -97,7 +116,7 @@ def compose_photo_on_background(
                 )
                 text_w = right - left
                 text_h = bottom - top
-                text_x = side_margin + (window_w - text_w) / 2 - left
+                text_x = side_margin + (photo_zone_w - text_w) / 2 - left
                 text_y = text_zone_top + (available_height - text_h) / 2 - top
                 draw.text(
                     (text_x, text_y), message, font=font, fill=color, align="center"
