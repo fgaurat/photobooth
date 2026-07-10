@@ -169,35 +169,6 @@
       gap: 0.5vw;
     }
 
-    /* Boutons de filtre */
-    .filter-btn {
-      width: 4vw;
-      height: 4vw;
-      border-radius: 50%;
-      border: 2px solid rgba(245, 197, 24, 0.3);
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.25s;
-      position: relative;
-      background: #1a0526;
-    }
-    .filter-btn:hover {
-      transform: scale(1.1);
-      border-color: var(--gold);
-      box-shadow: 0 0 15px rgba(245, 197, 24, 0.3);
-    }
-    .filter-btn.active {
-      border-color: var(--magenta);
-      transform: scale(1.1);
-      box-shadow: 0 0 20px rgba(233, 30, 140, 0.5);
-    }
-
-    .filter-btn img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
     .item-name {
       position: absolute;
       bottom: 0;
@@ -646,18 +617,14 @@
         <div class="spinner-small"></div>
       </div>
     </div>
+    {% if enable_face_props %}
     <div id="controls">
-      <div class="control-group">
-        <div class="control-label">Filtres</div>
-        <div class="control-row" id="filters"></div>
-      </div>
-      {% if enable_face_props %}
       <div class="control-group">
         <div class="control-label">Accessoires</div>
         <div class="control-row" id="props"></div>
       </div>
-      {% endif %}
     </div>
+    {% endif %}
     <div id="mode-selector">
       <button class="mode-btn active" data-mode="single">1 Photo</button>
       <button class="mode-btn" data-mode="strip">Planche x4</button>
@@ -718,17 +685,6 @@
 
     const FACE_PROPS_ENABLED = {{ 'true' if enable_face_props else 'false' }};
 
-    const FILTERS = [
-      { name: 'Normal',  css: 'none' },
-      { name: 'N&B',     css: 'grayscale(100%)' },
-      { name: 'Sepia',   css: 'sepia(90%)' },
-      { name: 'Vintage', css: 'sepia(40%) contrast(1.1) brightness(0.9) saturate(0.8)' },
-      { name: 'Punch',   css: 'contrast(1.4) saturate(1.6)' },
-      { name: 'Cool',    css: 'saturate(0.8) hue-rotate(15deg) brightness(1.05)' },
-      { name: 'Warm',    css: 'sepia(25%) saturate(1.3) brightness(1.05)' },
-      { name: 'Drama',   css: 'contrast(1.5) brightness(0.85) saturate(1.2)' },
-    ];
-
     const PROPS = [
       { name: 'Aucun',     src: null,                           type: null },
       { name: 'Lunettes',  src: '/static/props/glasses.svg',    type: 'eyes' },
@@ -763,7 +719,6 @@
     // STATE
     // =============================================
 
-    let currentFilter = FILTERS[0];
     let currentProp = PROPS[0];
     let currentMode = 'single'; // 'single' ou 'strip'
     let currentFaces = [];
@@ -778,7 +733,6 @@
     const liveviewEl       = document.getElementById('liveview');
     const overlayCanvas    = document.getElementById('overlay-canvas');
     const overlayCtx       = overlayCanvas.getContext('2d');
-    const filtersEl        = document.getElementById('filters');
     const propsEl          = document.getElementById('props');
     const btnEl            = document.getElementById('btn-capture');
     const countdownEl      = document.getElementById('countdown');
@@ -871,26 +825,6 @@
           img.src = p.src;
           propImages[p.name] = img;
         }
-      });
-    }
-
-    // =============================================
-    // FILTRES UI
-    // =============================================
-
-    FILTERS.forEach((f, i) => {
-      const btn = document.createElement('div');
-      btn.className = 'filter-btn' + (i === 0 ? ' active' : '');
-      btn.innerHTML = `<img src="/preview-thumb" style="filter:${f.css}"><span class="item-name">${f.name}</span>`;
-      btn.onclick = () => selectFilter(i);
-      filtersEl.appendChild(btn);
-    });
-
-    function selectFilter(index) {
-      currentFilter = FILTERS[index];
-      liveviewEl.style.filter = currentFilter.css;
-      document.querySelectorAll('.filter-btn').forEach((b, i) => {
-        b.classList.toggle('active', i === index);
       });
     }
 
@@ -1068,8 +1002,6 @@
         if (screenResult.style.display !== 'none') { btnOk.click(); }
         else if (!busy) { startCapture(); }
       }
-      if (e.code === 'ArrowRight' && !busy) { selectFilter((FILTERS.indexOf(currentFilter) + 1) % FILTERS.length); }
-      if (e.code === 'ArrowLeft' && !busy) { selectFilter((FILTERS.indexOf(currentFilter) - 1 + FILTERS.length) % FILTERS.length); }
       if (e.code === 'ArrowUp' && FACE_PROPS_ENABLED && !busy) { e.preventDefault(); selectProp((PROPS.indexOf(currentProp) + 1) % PROPS.length); }
       if (e.code === 'ArrowDown' && FACE_PROPS_ENABLED && !busy) { e.preventDefault(); selectProp((PROPS.indexOf(currentProp) - 1 + PROPS.length) % PROPS.length); }
       if (e.code === 'Tab' && !busy) {
@@ -1098,7 +1030,8 @@
       seconds = seconds || 3;
       if (audioCtx.state === 'suspended') audioCtx.resume();
       btnEl.style.display = 'none';
-      document.getElementById('controls').style.display = 'none';
+      const controlsEl = document.getElementById('controls');
+      if (controlsEl) controlsEl.style.display = 'none';
       document.getElementById('mode-selector').style.display = 'none';
       countdownOverlay.style.display = 'flex';
 
@@ -1129,30 +1062,29 @@
 
     async function startCapture() {
       busy = true;
-      const filterCss = currentFilter.css;
       const prop = currentProp;
 
       if (currentMode === 'strip') {
-        await startStripCapture(filterCss, prop);
+        await startStripCapture(prop);
       } else {
-        await startSingleCapture(filterCss, prop);
+        await startSingleCapture(prop);
       }
 
       stopCdnStatusPoll();
       liveviewEl.src = '/preview?' + Date.now();
-      liveviewEl.style.filter = currentFilter.css;
       stripProgress.style.display = 'none';
       stripThumbs.style.display = 'none';
       stripThumbs.innerHTML = '';
       showScreen(screenLive);
       btnEl.style.display = '';
-      document.getElementById('controls').style.display = '';
+      const controlsEl = document.getElementById('controls');
+      if (controlsEl) controlsEl.style.display = '';
       document.getElementById('mode-selector').style.display = '';
       startFaceDetectionLoop();
       busy = false;
     }
 
-    async function startSingleCapture(filterCss, prop) {
+    async function startSingleCapture(prop) {
       await doCountdown();
       stopFaceDetection();
       processingOverlay.style.display = 'flex';
@@ -1162,10 +1094,9 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur inconnue');
 
-        const finalFilename = await composeFinalPhoto(data.filename, filterCss, prop, true);
+        const finalFilename = await composeFinalPhoto(data.filename, prop, true);
         processingOverlay.style.display = 'none';
         photoEl.src = `/photos/preview/${finalFilename}`;
-        photoEl.style.filter = 'none';
         qrCodeEl.src = `/qr/${finalFilename}`;
         showScreen(screenResult);
         startCdnStatusPoll([finalFilename]);
@@ -1176,7 +1107,7 @@
       }
     }
 
-    async function startStripCapture(filterCss, prop) {
+    async function startStripCapture(prop) {
       const STRIP_COUNT = 4;
       const rawFilenames = [];
 
@@ -1215,11 +1146,11 @@
         // Libérer l'appareil photo dès que toutes les captures sont faites
         fetch('/strip-end', { method: 'POST' }).catch(() => {});
 
-        // Phase 2 : appliquer filtres/props et afficher les miniatures
+        // Phase 2 : appliquer props et afficher les miniatures
         stripProgress.textContent = 'Traitement...';
         const finalFiles = [];
         for (const fname of rawFilenames) {
-          const finalFile = await composeFinalPhoto(fname, filterCss, prop, false);
+          const finalFile = await composeFinalPhoto(fname, prop, false);
           finalFiles.push(finalFile);
 
           const thumb = document.createElement('img');
@@ -1240,7 +1171,6 @@
 
         processingOverlay.style.display = 'none';
         photoEl.src = `/photos/preview/${assembleData.filename}`;
-        photoEl.style.filter = 'none';
         qrCodeEl.src = `/qr/${assembleData.filename}`;
         showScreen(screenResult);
         startCdnStatusPoll([assembleData.filename]);
@@ -1258,11 +1188,11 @@
       setTimeout(() => { errorEl.style.display = 'none'; }, 4000);
     }
 
-    async function composeFinalPhoto(originalFilename, filterCss, prop, applyBackground) {
-      const needsClientCanvas = filterCss !== 'none' || prop.src;
+    async function composeFinalPhoto(originalFilename, prop, applyBackground) {
+      const needsClientCanvas = !!prop.src;
       if (!needsClientCanvas) {
         if (!applyBackground) return originalFilename;
-        // No filter/prop to bake in — skip the browser canvas entirely and
+        // No prop to bake in — skip the browser canvas entirely and
         // let the server composite the background directly on the already-
         // uploaded raw capture. Avoids re-encoding the full-resolution photo
         // client-side, which silently fails (null blob) on older WebKit
@@ -1287,9 +1217,7 @@
       exportCanvas.height = H;
       const ctx = exportCanvas.getContext('2d');
 
-      ctx.filter = filterCss;
       ctx.drawImage(img, 0, 0);
-      ctx.filter = 'none';
 
       if (prop.src && faceMesh) {
         const propImg = propImages[prop.name];
@@ -1339,12 +1267,9 @@
 
       const blob = await new Promise(r => exportCanvas.toBlob(r, 'image/jpeg', 0.92));
       if (!blob) {
-        throw new Error("Cet appareil n'a pas pu traiter la photo (mémoire insuffisante) — réessayez avec le filtre \"Normal\"");
+        throw new Error("Cet appareil n'a pas pu traiter la photo (mémoire insuffisante) — réessayez sans accessoire");
       }
-      const suffix = [
-        filterCss !== 'none' ? currentFilter.name.toLowerCase() : '',
-        prop.src ? prop.name.toLowerCase().replace(/ /g, '') : '',
-      ].filter(Boolean).join('_');
+      const suffix = prop.src ? prop.name.toLowerCase().replace(/ /g, '') : '';
       const finalName = originalFilename.replace('.jpg', `_${suffix || 'final'}.jpg`);
       const form = new FormData();
       form.append('file', blob, finalName);

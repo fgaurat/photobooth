@@ -302,16 +302,6 @@ def index():
     )
 
 
-@app.route("/preview-thumb")
-def preview_thumb():
-    from PIL import Image as PILImage
-    img = PILImage.new("RGB", (100, 100), (80, 80, 80))
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG")
-    buf.seek(0)
-    return send_file(buf, mimetype="image/jpeg")
-
-
 @app.route("/preview")
 def preview_stream():
     if CAMERA_MODE == "canon":
