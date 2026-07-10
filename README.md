@@ -44,6 +44,22 @@ uv run python app.py
 
 L'app écoute sur **http://localhost:8080**. Galerie sur **/gallery**.
 
+### Empêcher la mise en veille (déploiement événementiel)
+
+`./start.sh` lance l'app avec [`caffeinate`](https://ss64.com/mac/caffeinate.html), pour que le Mac ne se mette jamais en veille (écran fermé ou non) tant que le photobooth tourne :
+
+```bash
+./start.sh
+```
+
+Le mode (Canon/webcam, et donc le besoin de `sudo`) est lu automatiquement depuis `CAMERA_MODE` dans `.env`.
+
+Pour pouvoir fermer le capot (mode "clamshell" macOS) sans que le Mac ne s'éteigne, il faut en plus :
+- le Mac branché sur secteur (pas sur batterie)
+- un écran externe connecté et actif
+
+Depuis macOS Monterey, aucun clavier/souris externe n'est requis pour ça — juste l'alimentation et l'écran externe.
+
 ## Configuration (`.env`)
 
 ```dotenv
