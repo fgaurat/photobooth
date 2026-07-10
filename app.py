@@ -14,12 +14,28 @@ import requests
 from dotenv import load_dotenv
 from photo_compositing import compose_photo_on_background
 from flask import Flask, render_template, jsonify, send_from_directory, send_file, Response, request
+from werkzeug.utils import secure_filename
 
 load_dotenv()
 
 app = Flask(__name__)
 PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "photos")
 os.makedirs(PHOTOS_DIR, exist_ok=True)
+
+
+def safe_photo_path(filename):
+    """Resolve `filename` (client-supplied) to an absolute path inside
+    PHOTOS_DIR, or None if it's not a bare filename — rejects path
+    separators, `..`, absolute paths, or anything werkzeug's
+    secure_filename() would need to alter. Prevents path traversal via
+    the several routes that accept a filename from the client."""
+    if not filename or secure_filename(filename) != filename:
+        return None
+    photos_root = os.path.realpath(PHOTOS_DIR)
+    resolved = os.path.realpath(os.path.join(photos_root, filename))
+    if not resolved.startswith(photos_root + os.sep):
+        return None
+    return resolved
 
 # --- Configuration depuis .env ---
 CAMERA_MODE = os.getenv("CAMERA_MODE", "canon")  # "canon" ou "webcam"
@@ -394,8 +410,8 @@ def assemble_strip():
 
     images = []
     for fname in filenames:
-        fpath = os.path.join(PHOTOS_DIR, fname)
-        if os.path.exists(fpath):
+        fpath = safe_photo_path(fname)
+        if fpath and os.path.exists(fpath):
             images.append(PILImage.open(fpath))
 
     if not images:
@@ -502,12 +518,14 @@ def apply_background_route():
     photos Canon haute résolution)."""
     data = request.get_json(silent=True) or {}
     filename = data.get("filename", "")
-    src_path = os.path.join(PHOTOS_DIR, filename)
-    if not filename or not os.path.isfile(src_path):
+    src_path = safe_photo_path(filename)
+    if not src_path or not os.path.isfile(src_path):
         return jsonify({"error": "Photo introuvable"}), 404
 
     final_filename = filename.replace(".jpg", "_final.jpg")
-    final_path = os.path.join(PHOTOS_DIR, final_filename)
+    final_path = safe_photo_path(final_filename)
+    if not final_path:
+        return jsonify({"error": "Nom de fichier invalide"}), 400
     shutil.copyfile(src_path, final_path)
     apply_photo_background(final_path)
 
@@ -521,7 +539,9 @@ def upload_filtered():
         return jsonify({"error": "Pas de fichier"}), 400
     f = request.files["file"]
     filename = request.form.get("filename", f"filtered_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-    filepath = os.path.join(PHOTOS_DIR, filename)
+    filepath = safe_photo_path(filename)
+    if not filepath:
+        return jsonify({"error": "Nom de fichier invalide"}), 400
     f.save(filepath)
 
     if request.form.get("apply_background") == "1":
@@ -540,8 +560,8 @@ def serve_photo(filename):
 def serve_photo_preview(filename):
     from PIL import Image as PILImage
 
-    filepath = os.path.join(PHOTOS_DIR, filename)
-    if not os.path.exists(filepath):
+    filepath = safe_photo_path(filename)
+    if not filepath or not os.path.exists(filepath):
         return "Not found", 404
 
     img = PILImage.open(filepath)
