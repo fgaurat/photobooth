@@ -1259,8 +1259,24 @@
     }
 
     async function composeFinalPhoto(originalFilename, filterCss, prop, applyBackground) {
-      const needsProcessing = filterCss !== 'none' || prop.src || applyBackground;
-      if (!needsProcessing) return originalFilename;
+      const needsClientCanvas = filterCss !== 'none' || prop.src;
+      if (!needsClientCanvas) {
+        if (!applyBackground) return originalFilename;
+        // No filter/prop to bake in — skip the browser canvas entirely and
+        // let the server composite the background directly on the already-
+        // uploaded raw capture. Avoids re-encoding the full-resolution photo
+        // client-side, which silently fails (null blob) on older WebKit
+        // versions once the canvas exceeds their pixel-count limit (e.g.
+        // older iPads with a Canon-resolution capture).
+        const res = await fetch('/apply-background', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: originalFilename }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur de composition');
+        return data.filename;
+      }
 
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -1322,6 +1338,9 @@
       }
 
       const blob = await new Promise(r => exportCanvas.toBlob(r, 'image/jpeg', 0.92));
+      if (!blob) {
+        throw new Error("Cet appareil n'a pas pu traiter la photo (mémoire insuffisante) — réessayez avec le filtre \"Normal\"");
+      }
       const suffix = [
         filterCss !== 'none' ? currentFilter.name.toLowerCase() : '',
         prop.src ? prop.name.toLowerCase().replace(/ /g, '') : '',

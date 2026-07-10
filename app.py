@@ -3,6 +3,7 @@
 
 import io
 import os
+import shutil
 import subprocess
 import threading
 import time
@@ -490,6 +491,28 @@ def apply_photo_background(filepath):
             composed.save(filepath, "JPEG", quality=92)
     except Exception as e:
         print(f"⚠️  Composition fond échouée : {e}")
+
+
+@app.route("/apply-background", methods=["POST"])
+def apply_background_route():
+    """Compose le fond sur une photo déjà présente sur le serveur (raw
+    capture), sans passer par un ré-upload navigateur — évite le canvas
+    côté client dans le cas courant sans filtre/prop, qui plante sur les
+    anciens appareils (limite de taille de canvas WebKit dépassée sur les
+    photos Canon haute résolution)."""
+    data = request.get_json(silent=True) or {}
+    filename = data.get("filename", "")
+    src_path = os.path.join(PHOTOS_DIR, filename)
+    if not filename or not os.path.isfile(src_path):
+        return jsonify({"error": "Photo introuvable"}), 404
+
+    final_filename = filename.replace(".jpg", "_final.jpg")
+    final_path = os.path.join(PHOTOS_DIR, final_filename)
+    shutil.copyfile(src_path, final_path)
+    apply_photo_background(final_path)
+
+    upload_to_cdn_async(final_path, final_filename)
+    return jsonify({"filename": final_filename})
 
 
 @app.route("/upload-filtered", methods=["POST"])
